@@ -38,6 +38,20 @@ def create_product():
 
 
 # ------------------------
+# GET a specific product by ID
+# ------------------------
+@product_bp.route("/<int:id>", methods=["GET"])
+def get_product(id):
+    product = Product.query.get_or_404(id)
+    return jsonify({
+        "id": product.id,
+        "name": product.name,
+        "price": product.price,
+        "description": product.description
+    }), 200
+
+
+# ------------------------
 # UPDATE a product
 # ------------------------
 @product_bp.route("/<int:id>", methods=["PATCH"])
