@@ -1,1 +1,14 @@
 .marscode
+.env
+venv
+
+# Database
+server/instance/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+

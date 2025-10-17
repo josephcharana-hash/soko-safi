@@ -1,9 +1,9 @@
 from flask import Flask
 from flask_migrate import Migrate
 from flask_cors import CORS
-from server.models import db
-from server.routes.user_routes import user_bp
-from server.routes.product_routes import product_bp
+from models import db
+from routes.user_routes import user_bp
+from routes.product_routes import product_bp
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///soko.db'
@@ -14,8 +14,8 @@ migrate = Migrate(app, db)
 CORS(app)
 
 # register blueprints
-app.register_blueprint(user_bp)
-app.register_blueprint(product_bp)
+app.register_blueprint(user_bp, url_prefix='/users')
+app.register_blueprint(product_bp, url_prefix='/products')
 
 if __name__ == "__main__":
     app.run(port=5555, debug=True)
