@@ -1,6 +1,6 @@
 import React from 'react'
 
-const ArtisanDashboard = () => {
+function ArtisanDashboard() {
   return (
     <div>ArtisanDashboard</div>
   )

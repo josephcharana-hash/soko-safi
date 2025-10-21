@@ -1,6 +1,6 @@
 import React from 'react'
 
-const ArtisanProfilePage = () => {
+function ArtisanProfilePage() {
   return (
     <div>ArtisanProfilePage</div>
   )
