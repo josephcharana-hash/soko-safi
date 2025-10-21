@@ -1,56 +1,151 @@
-const Navbar = () => {
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Diamond, ShoppingCart, MessageSquare, User, Menu, X } from 'lucide-react'
+
+const Navbar = ({ showAuthButtons = true, isLoggedIn = false }) => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
   return (
-    <nav className="h-20 bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
-      <div className="flex justify-between items-center h-full px-8">
-        <div className="flex items-center gap-6">
-          <button className="lg:hidden text-gray-600 hover:text-gray-800">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">S</span>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-800">SokoDigit</h1>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-6">
-          <div className="relative">
-            <input 
-              type="text" 
-              placeholder="Search..."
-              className="w-80 px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
-            <svg className="w-5 h-5 text-gray-400 absolute right-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+    <nav className="bg-white shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          <Link to="/" className="flex items-center space-x-2">
+            <Diamond className="w-6 h-6 text-primary" fill="currentColor" />
+            <span className="text-xl font-bold text-gray-900">SokoDigital</span>
+          </Link>
+          
+          <div className="hidden md:flex items-center space-x-8">
+            <Link to="/" className="text-gray-700 hover:text-gray-900 font-medium">
+              Home
+            </Link>
+            <Link to="/explore" className="text-gray-700 hover:text-gray-900 font-medium">
+              Explore
+            </Link>
+            <Link to="/about" className="text-gray-700 hover:text-gray-900 font-medium">
+              About
+            </Link>
           </div>
           
-          <button className="relative p-2 text-gray-600 hover:text-gray-800">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM9 7H4l5-5v5z" />
-            </svg>
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-          </button>
-          
-          <div className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 px-3 py-2 rounded-lg">
-            <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-medium">A</span>
-            </div>
-            <div className="text-left">
-              <p className="text-sm font-medium text-gray-800">Admin User</p>
-              <p className="text-xs text-gray-500">Administrator</p>
-            </div>
-            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
+          <div className="flex items-center space-x-2">
+            {/* Desktop Auth Buttons */}
+            {showAuthButtons && !isLoggedIn && (
+              <div className="hidden md:flex items-center space-x-4">
+                <Link to="/login" className="text-gray-700 hover:text-gray-900 font-medium">
+                  Log In
+                </Link>
+                <Link to="/register" className="btn-primary">
+                  Sign Up
+                </Link>
+              </div>
+            )}
+
+            {/* Desktop User Menu */}
+            {isLoggedIn && (
+              <div className="hidden md:flex items-center space-x-4">
+                <Link to="/messages" className="p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100 relative">
+                  <MessageSquare className="w-5 h-5" />
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                </Link>
+                <Link to="/cart" className="p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100 relative">
+                  <ShoppingCart className="w-5 h-5" />
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-white text-xs rounded-full flex items-center justify-center">
+                    3
+                  </span>
+                </Link>
+                <Link to="/buyer-dashboard" className="flex items-center space-x-2 p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100">
+                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                    <User className="w-5 h-5 text-white" />
+                  </div>
+                </Link>
+              </div>
+            )}
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 text-gray-600 hover:text-gray-900"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden py-4 border-t border-gray-200">
+            <div className="flex flex-col space-y-3">
+              <Link 
+                to="/" 
+                className="text-gray-700 hover:text-gray-900 font-medium px-2 py-2 rounded-lg hover:bg-gray-50"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Home
+              </Link>
+              <Link 
+                to="/explore" 
+                className="text-gray-700 hover:text-gray-900 font-medium px-2 py-2 rounded-lg hover:bg-gray-50"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Explore
+              </Link>
+              <Link 
+                to="/about" 
+                className="text-gray-700 hover:text-gray-900 font-medium px-2 py-2 rounded-lg hover:bg-gray-50"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                About
+              </Link>
+              {showAuthButtons && !isLoggedIn && (
+                <>
+                  <Link 
+                    to="/login" 
+                    className="text-gray-700 hover:text-gray-900 font-medium px-2 py-2 rounded-lg hover:bg-gray-50"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Log In
+                  </Link>
+                  <Link 
+                    to="/register" 
+                    className="btn-primary text-center"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Sign Up
+                  </Link>
+                </>
+              )}
+              {isLoggedIn && (
+                <>
+                  <Link 
+                    to="/cart" 
+                    className="text-gray-700 hover:text-gray-900 font-medium px-2 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <span>Cart</span>
+                    <span className="bg-primary text-white text-xs px-2 py-1 rounded-full">3</span>
+                  </Link>
+                  <Link 
+                    to="/messages" 
+                    className="text-gray-700 hover:text-gray-900 font-medium px-2 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-between"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <span>Messages</span>
+                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                  </Link>
+                  <Link 
+                    to="/buyer-dashboard" 
+                    className="text-gray-700 hover:text-gray-900 font-medium px-2 py-2 rounded-lg hover:bg-gray-50"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Dashboard
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </nav>
-  );
-};
+  )
+}
 
-export default Navbar;
+export default Navbar
