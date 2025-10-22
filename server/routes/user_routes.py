@@ -1,41 +1,24 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, request, jsonify
 from models import db, User
 
+user_bp = Blueprint('user_bp', __name__)
 
-
-
-user_bp = Blueprint("user_bp", __name__)
-
-@user_bp.route("/", methods=["GET"])
-def get_users():
-    users = User.query.all()
-    return jsonify([{"id": u.id, "username": u.username, "email": u.email} for u in users])
-
-@user_bp.route("/", methods=["POST"])
+@user_bp.route('/', methods=['POST'])
 def create_user():
-    data = request.get_json()
-    user = User(username=data["username"], email=data["email"], password=data["password"])
+    data = request.json
+    user = User(**data)
     db.session.add(user)
     db.session.commit()
-    return jsonify({"message": "User created successfully"}), 201
+    return jsonify({'id': user.id}), 201
 
-@user_bp.route("/<int:id>", methods=["GET"])
-def get_user(id):
-    user = User.query.get_or_404(id)
-    return jsonify({"id": user.id, "username": user.username, "email": user.email})
-
-@user_bp.route("/<int:id>", methods=["PATCH"])
-def update_user(id):
-    user = User.query.get_or_404(id)
-    data = request.get_json()
-    user.username = data.get("username", user.username)
-    user.email = data.get("email", user.email)
-    db.session.commit()
-    return jsonify({"message": "User updated successfully"})
-
-@user_bp.route("/<int:id>", methods=["DELETE"])
-def delete_user(id):
-    user = User.query.get_or_404(id)
-    db.session.delete(user)
-    db.session.commit()
-    return jsonify({"message": "User deleted"})
+@user_bp.route('/<user_id>', methods=['GET'])
+def get_user(user_id):
+    user = User.query.get_or_404(user_id)
+    return jsonify({
+        'id': user.id,
+        'role': user.role.value,
+        'email': user.email,
+        'full_name': user.full_name,
+        'phone': user.phone,
+        'location': user.location
+    })

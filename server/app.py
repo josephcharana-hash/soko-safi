@@ -1,13 +1,13 @@
 from flask import Flask
 from models import db
-from routes import api
+from routes import register_blueprints
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///soko_safi.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
-app.register_blueprint(api, url_prefix='/api')
+register_blueprints(app)
 
 with app.app_context():
     db.create_all()
