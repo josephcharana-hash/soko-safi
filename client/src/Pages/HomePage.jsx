@@ -26,8 +26,8 @@ const HomePage = () => {
       id: 4,
       title: 'Textile Art',
       description: 'Colorful textile art piece depicting a local scene.',
-      image: 'Colorful textile art piece depicting a local scene.',
-        }
+      image: 'https://images.unsplash.com/photo-1558769132-cb1aea3c8565?w=400&h=400&fit=crop'
+    }
   ]
 
   return (

@@ -17,7 +17,7 @@ const RegisterPage = () => {
     console.log('Register:', { ...formData, userType })
     // Redirect based on user type
     if (userType === 'artisan') {
-      navigate('/dashboard')
+      navigate('/artisan-dashboard')
     } else {
       navigate('/buyer-dashboard')
     }

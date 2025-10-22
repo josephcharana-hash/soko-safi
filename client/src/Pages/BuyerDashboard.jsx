@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Diamond, LayoutDashboard, ShoppingBag, MessageSquare, Heart, Star, User, Bell, Package, CreditCard } from 'lucide-react'
+import ReviewModal from '../Components/ReviewModal'
 
 const BuyerDashboard = () => {
   const [activeTab, setActiveTab] = useState('orders')
+  const [reviewModal, setReviewModal] = useState({ isOpen: false, product: null })
 
   // Mock data
   const orders = [
@@ -300,22 +302,25 @@ const BuyerDashboard = () => {
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-xl font-bold text-gray-900 mb-2">${order.price.toFixed(2)}</p>
+                          <p className="text-xl font-bold text-gray-900 mb-2">KSH {order.price.toFixed(2)}</p>
                           <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(order.status)}`}>
                             {order.status}
                           </span>
                         </div>
                       </div>
                       <div className="flex items-center space-x-3 pt-4 border-t border-gray-200">
-                        <Link to={`/product/${order.id}`} className="btn-secondary text-sm px-4 py-2">
+                        <Link to={`/product/${order.id.replace('#', '')}`} className="btn-secondary text-sm px-4 py-2">
                           View Product
                         </Link>
                         {order.canReview && (
-                          <button className="btn-primary text-sm px-4 py-2">
+                          <button 
+                            onClick={() => setReviewModal({ isOpen: true, product: order })}
+                            className="btn-primary text-sm px-4 py-2"
+                          >
                             Write Review
                           </button>
                         )}
-                        <Link to={`/messages/${order.id}`} className="btn-secondary text-sm px-4 py-2">
+                        <Link to={`/messages`} className="btn-secondary text-sm px-4 py-2">
                           Message Artisan
                         </Link>
                       </div>
@@ -427,7 +432,7 @@ const BuyerDashboard = () => {
                               {payment.method}
                             </td>
                             <td className="px-6 py-4 text-sm font-bold text-gray-900">
-                              ${payment.amount.toFixed(2)}
+                              KSH {payment.amount.toFixed(2)}
                             </td>
                             <td className="px-6 py-4">
                               <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(payment.status)}`}>
@@ -445,6 +450,12 @@ const BuyerDashboard = () => {
           </div>
         </main>
       </div>
+      
+      <ReviewModal
+        isOpen={reviewModal.isOpen}
+        onClose={() => setReviewModal({ isOpen: false, product: null })}
+        product={reviewModal.product}
+      />
     </div>
   )
 }

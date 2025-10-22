@@ -13,7 +13,7 @@ const LoginPage = () => {
     e.preventDefault()
     // Handle login logic here
     console.log('Login:', formData)
-    navigate('/dashboard')
+    navigate('/buyer-dashboard')
   }
 
   const handleChange = (e) => {
