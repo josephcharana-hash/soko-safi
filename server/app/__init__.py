@@ -22,6 +22,10 @@ def create_app():
     def home():
         return "Yo! Flask is up and running 🔥 with WebSockets!"
     
+    @app.route('/test')
+    def test_client():
+        return app.send_static_file('../test_client.html')
+    
     # Test endpoints
     from app.sockets.notifications import notify_order_status_change, notify_payment_confirmation
     
