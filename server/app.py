@@ -1,10 +1,9 @@
-from flask import Flask
+from app import create_app
+from app.extensions import db, socketio
 
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return "Yo! Flask is up and running 🔥"
+app = create_app()
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    with app.app_context():
+        db.create_all()
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)
