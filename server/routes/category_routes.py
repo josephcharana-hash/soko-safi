@@ -1,21 +1,24 @@
-from flask import Blueprint, request, jsonify
+from flask_restful import Resource, Api
+from flask import Blueprint, request
 from models import db, Category
 
 category_bp = Blueprint('category_bp', __name__)
+category_api = Api(category_bp)
 
-@category_bp.route('/', methods=['GET'])
-def get_categories():
-    categories = Category.query.all()
-    return jsonify([{
-        'id': c.id,
-        'name': c.name,
-        'description': c.description
-    } for c in categories])
+class CategoryListResource(Resource):
+    def get(self):
+        categories = Category.query.all()
+        return [{
+            'id': c.id,
+            'name': c.name,
+            'description': c.description
+        } for c in categories]
+    
+    def post(self):
+        data = request.json
+        category = Category(**data)
+        db.session.add(category)
+        db.session.commit()
+        return {'id': category.id}, 201
 
-@category_bp.route('/', methods=['POST'])
-def create_category():
-    data = request.json
-    category = Category(**data)
-    db.session.add(category)
-    db.session.commit()
-    return jsonify({'id': category.id}), 201
+category_api.add_resource(CategoryListResource, '/')

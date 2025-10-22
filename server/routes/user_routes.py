@@ -1,24 +1,29 @@
-from flask import Blueprint, request, jsonify
+from flask_restful import Resource, Api
+from flask import Blueprint, request
 from models import db, User
 
 user_bp = Blueprint('user_bp', __name__)
+user_api = Api(user_bp)
 
-@user_bp.route('/', methods=['POST'])
-def create_user():
-    data = request.json
-    user = User(**data)
-    db.session.add(user)
-    db.session.commit()
-    return jsonify({'id': user.id}), 201
+class UserListResource(Resource):
+    def post(self):
+        data = request.json
+        user = User(**data)
+        db.session.add(user)
+        db.session.commit()
+        return {'id': user.id}, 201
 
-@user_bp.route('/<user_id>', methods=['GET'])
-def get_user(user_id):
-    user = User.query.get_or_404(user_id)
-    return jsonify({
-        'id': user.id,
-        'role': user.role.value,
-        'email': user.email,
-        'full_name': user.full_name,
-        'phone': user.phone,
-        'location': user.location
-    })
+class UserResource(Resource):
+    def get(self, user_id):
+        user = User.query.get_or_404(user_id)
+        return {
+            'id': user.id,
+            'role': user.role.value,
+            'email': user.email,
+            'full_name': user.full_name,
+            'phone': user.phone,
+            'location': user.location
+        }
+
+user_api.add_resource(UserListResource, '/')
+user_api.add_resource(UserResource, '/<user_id>')
