@@ -6,6 +6,17 @@ user_bp = Blueprint('user_bp', __name__)
 user_api = Api(user_bp)
 
 class UserListResource(Resource):
+    def get(self):
+        users = User.query.filter_by(deleted_at=None).all()
+        return [{
+            'id': u.id,
+            'role': u.role.value,
+            'email': u.email,
+            'full_name': u.full_name,
+            'phone': u.phone,
+            'location': u.location
+        } for u in users]
+    
     def post(self):
         data = request.json
         user = User(**data)
