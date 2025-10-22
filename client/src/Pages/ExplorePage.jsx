@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
-import Navbar from '../components/Navbar'
-import Footer from '../components/Footer'
+import Navbar from '../Components/Layout/Navbar'
+import Footer from '../Components/Layout/Footer'
 
 const ExplorePage = () => {
   const works = [
@@ -82,7 +82,7 @@ const ExplorePage = () => {
                   </p>
                   <div className="flex items-center justify-between">
                     <span className="text-xl font-bold text-gray-900">
-                      ${work.price.toFixed(2)}
+                      KSH {work.price.toFixed(2)}
                     </span>
                     <span className="btn-primary text-sm px-4 py-2">
                       View Details

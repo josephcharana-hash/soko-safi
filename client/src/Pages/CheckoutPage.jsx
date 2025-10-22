@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Diamond, CreditCard, Lock, CheckCircle } from 'lucide-react'
-import Navbar from '../components/Navbar'
-import Footer from '../components/Footer'
+import Navbar from '../Components/Layout/Navbar'
+import Footer from '../Components/Layout/Footer'
 
 const CheckoutPage = () => {
   const navigate = useNavigate()
@@ -446,7 +446,7 @@ const CheckoutPage = () => {
                         <p className="font-medium text-gray-900 text-sm">{item.title}</p>
                         <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
                       </div>
-                      <p className="font-bold text-gray-900">${(item.price * item.quantity).toFixed(2)}</p>
+                      <p className="font-bold text-gray-900">KSH {(item.price * item.quantity).toFixed(2)}</p>
                     </div>
                   ))}
                 </div>
@@ -454,20 +454,20 @@ const CheckoutPage = () => {
                 <div className="border-t border-gray-200 pt-4 space-y-2">
                   <div className="flex justify-between text-gray-700">
                     <span>Subtotal</span>
-                    <span className="font-medium">${subtotal.toFixed(2)}</span>
+                    <span className="font-medium">KSH {subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-gray-700">
                     <span>Shipping</span>
-                    <span className="font-medium">${shipping.toFixed(2)}</span>
+                    <span className="font-medium">KSH {shipping.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-gray-700">
                     <span>Tax</span>
-                    <span className="font-medium">${tax.toFixed(2)}</span>
+                    <span className="font-medium">KSH {tax.toFixed(2)}</span>
                   </div>
                   <div className="border-t border-gray-200 pt-2 mt-2">
                     <div className="flex justify-between">
                       <span className="text-lg font-bold text-gray-900">Total</span>
-                      <span className="text-xl font-bold text-gray-900">${total.toFixed(2)}</span>
+                      <span className="text-xl font-bold text-gray-900">KSH {total.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>

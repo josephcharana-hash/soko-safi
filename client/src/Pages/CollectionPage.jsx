@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Diamond, Heart, Trash2, ShoppingCart, Share2 } from 'lucide-react'
-import Navbar from '../components/Navbar'
-import Footer from '../components/Footer'
+import Navbar from '../Components/Layout/Navbar'
+import Footer from '../Components/Layout/Footer'
 
 const CollectionPage = () => {
   const { id } = useParams()
@@ -131,7 +131,7 @@ const CollectionPage = () => {
                     <p className="text-sm text-gray-600 mb-3">by {item.artisan}</p>
                     <div className="flex items-center justify-between">
                       <span className="text-xl font-bold text-gray-900">
-                        ${item.price.toFixed(2)}
+                        KSH {item.price.toFixed(2)}
                       </span>
                       <button
                         onClick={() => addToCart(item.id)}

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
-import Navbar from '../components/Navbar'
-import Footer from '../components/Footer'
+import Navbar from '../Components/Layout/Navbar'
+import Footer from '../Components/Layout/Footer'
 
 const HomePage = () => {
   const featuredWorks = [

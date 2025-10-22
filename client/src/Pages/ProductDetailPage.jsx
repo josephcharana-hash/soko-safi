@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Diamond, ShoppingCart, Heart, Star, MessageSquare, ArrowLeft, User } from 'lucide-react'
-import Navbar from '../components/Navbar'
-import Footer from '../components/Footer'
+import Navbar from '../Components/Layout/Navbar'
+import Footer from '../Components/Layout/Footer'
 
 const ProductDetailPage = () => {
   const { id } = useParams()
@@ -137,7 +137,7 @@ const ProductDetailPage = () => {
 
                 <div className="mb-6">
                   <span className="text-4xl font-bold text-gray-900">
-                    ${product.price.toFixed(2)}
+                    KSH {product.price.toFixed(2)}
                   </span>
                   <span className={`ml-4 text-sm font-medium ${product.inStock ? 'text-green-600' : 'text-red-600'}`}>
                     {product.inStock ? 'In Stock' : 'Out of Stock'}

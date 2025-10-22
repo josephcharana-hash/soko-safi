@@ -7,6 +7,7 @@
 @layer base {
   body {
     font-family: 'Inter', system-ui, sans-serif;
+    @apply bg-gray-50;
   }
 }
 
@@ -17,5 +18,29 @@
   
   .stat-card {
     @apply bg-white p-6 rounded-xl shadow-sm border border-gray-100;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all;
+  }
+
+  .btn-primary {
+    @apply bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors;
+  }
+
+  .text-primary {
+    @apply text-primary-600;
+  }
+
+  .text-primary-hover {
+    @apply text-primary-700;
+  }
+
+  .primary-hover {
+    @apply bg-primary-700;
   }
 }
