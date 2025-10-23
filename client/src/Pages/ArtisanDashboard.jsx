@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Diamond, LayoutDashboard, Package, ShoppingBag, MessageSquare, Upload, Bell, User } from 'lucide-react'
+import { Diamond, LayoutDashboard, Package, ShoppingBag, MessageSquare, Upload, Bell, User, Plus } from 'lucide-react'
 
 const ArtisanDashboard = () => {
   const [activeTab, setActiveTab] = useState('products')
+  const [showAddProduct, setShowAddProduct] = useState(false)
   const [dragActive, setDragActive] = useState(false)
+  const [uploadedImage, setUploadedImage] = useState(null)
   const [formData, setFormData] = useState({
     title: '',
     category: '',
@@ -12,6 +14,23 @@ const ArtisanDashboard = () => {
     description: '',
     price: ''
   })
+
+  const [myProducts, setMyProducts] = useState([
+    {
+      id: 1,
+      title: 'Ceramic Vase',
+      price: 45.00,
+      status: 'Active',
+      image: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=100&h=100&fit=crop'
+    },
+    {
+      id: 2,
+      title: 'Wood Carving',
+      price: 120.00,
+      status: 'Active',
+      image: 'https://images.unsplash.com/photo-1595429426858-28f04f7db1f5?w=100&h=100&fit=crop'
+    }
+  ])
 
   const handleDrag = (e) => {
     e.preventDefault()
@@ -29,15 +48,23 @@ const ArtisanDashboard = () => {
     setDragActive(false)
     
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      // Handle file upload
-      console.log('File dropped:', e.dataTransfer.files[0])
+      const file = e.dataTransfer.files[0]
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setUploadedImage(e.target.result)
+      }
+      reader.readAsDataURL(file)
     }
   }
 
   const handleFileInput = (e) => {
     if (e.target.files && e.target.files[0]) {
-      // Handle file upload
-      console.log('File selected:', e.target.files[0])
+      const file = e.target.files[0]
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setUploadedImage(e.target.result)
+      }
+      reader.readAsDataURL(file)
     }
   }
 
@@ -50,8 +77,21 @@ const ArtisanDashboard = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    console.log('Product submitted:', formData)
-    // Handle product submission
+    
+    const newProduct = {
+      id: myProducts.length + 1,
+      title: formData.title,
+      price: parseFloat(formData.price),
+      status: 'Active',
+      image: uploadedImage || 'https://via.placeholder.com/100/3b82f6/ffffff?text=Product'
+    }
+    
+    setMyProducts([...myProducts, newProduct])
+    setShowAddProduct(false)
+    setFormData({ title: '', category: '', subcategory: '', description: '', price: '' })
+    setUploadedImage(null)
+    
+    alert('Product added successfully!')
   }
 
   return (
@@ -61,7 +101,7 @@ const ArtisanDashboard = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link to="/" className="flex items-center space-x-2">
-              <Diamond className="w-6 h-6 text-primary" fill="currentColor" />
+              <Diamond className="w-6 h-6 text-primary-600" fill="currentColor" />
               <span className="text-xl font-bold text-gray-900">SokoDigital</span>
             </Link>
             
@@ -70,7 +110,7 @@ const ArtisanDashboard = () => {
                 <Bell className="w-5 h-5" />
               </button>
               <button className="flex items-center space-x-2 p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100">
-                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
                   <User className="w-5 h-5 text-white" />
                 </div>
               </button>
@@ -100,15 +140,15 @@ const ArtisanDashboard = () => {
               </button>
               
               <button
-                onClick={() => setActiveTab('products')}
+                onClick={() => { setActiveTab('products'); setShowAddProduct(false); }}
                 className={`flex-shrink-0 md:w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap ${
                   activeTab === 'products'
-                    ? 'bg-primary/10 text-primary'
+                    ? 'bg-primary-600/10 text-primary-600'
                     : 'text-gray-600 hover:bg-gray-50'
                 }`}
               >
                 <Package className="w-5 h-5" />
-                <span className="font-medium">Products</span>
+                <span className="font-medium">My Products</span>
               </button>
               
               <button
@@ -150,210 +190,262 @@ const ArtisanDashboard = () => {
                   <div className="card p-6">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-sm font-medium text-gray-600">Total Products</h3>
-                      <Package className="w-5 h-5 text-primary" />
+                      <Package className="w-5 h-5 text-primary-600" />
                     </div>
-                    <p className="text-3xl font-bold text-gray-900">12</p>
+                    <p className="text-3xl font-bold text-gray-900">{myProducts.length}</p>
                   </div>
                   <div className="card p-6">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-sm font-medium text-gray-600">Total Orders</h3>
-                      <ShoppingBag className="w-5 h-5 text-primary" />
+                      <ShoppingBag className="w-5 h-5 text-primary-600" />
                     </div>
                     <p className="text-3xl font-bold text-gray-900">28</p>
                   </div>
                   <div className="card p-6">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-sm font-medium text-gray-600">Revenue</h3>
-                      <span className="text-primary font-bold">$</span>
+                      <span className="text-primary-600 font-bold">KSH</span>
                     </div>
-                    <p className="text-3xl font-bold text-gray-900">$2,450</p>
-                  </div>
-                </div>
-                <div className="card p-6">
-                  <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Activity</h2>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                      <div>
-                        <p className="font-medium text-gray-900">New order received</p>
-                        <p className="text-sm text-gray-600">Ceramic Vase - $45.00</p>
-                      </div>
-                      <span className="text-sm text-gray-500">2 hours ago</span>
-                    </div>
-                    <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                      <div>
-                        <p className="font-medium text-gray-900">Product viewed</p>
-                        <p className="text-sm text-gray-600">Wood Carving - 15 views</p>
-                      </div>
-                      <span className="text-sm text-gray-500">5 hours ago</span>
-                    </div>
-                    <div className="flex items-center justify-between py-3">
-                      <div>
-                        <p className="font-medium text-gray-900">New message</p>
-                        <p className="text-sm text-gray-600">Question about Textile Art</p>
-                      </div>
-                      <span className="text-sm text-gray-500">1 day ago</span>
-                    </div>
+                    <p className="text-3xl font-bold text-gray-900">KSH 2,450</p>
                   </div>
                 </div>
               </>
             )}
 
-            {activeTab === 'products' && (
+            {activeTab === 'products' && !showAddProduct && (
               <>
-                <h1 className="text-3xl font-bold text-gray-900 mb-8">
-                  Upload Your Work
-                </h1>
+                <div className="flex items-center justify-between mb-8">
+                  <h1 className="text-3xl font-bold text-gray-900">
+                    My Products ({myProducts.length})
+                  </h1>
+                  <button
+                    onClick={() => setShowAddProduct(true)}
+                    className="btn-primary px-6 py-3 flex items-center space-x-2"
+                  >
+                    <Plus className="w-5 h-5" />
+                    <span>Add Product</span>
+                  </button>
+                </div>
+
+                {myProducts.length === 0 ? (
+                  <div className="card p-12 text-center">
+                    <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">No products yet</h3>
+                    <p className="text-gray-600 mb-6">Start by adding your first product</p>
+                    <button
+                      onClick={() => setShowAddProduct(true)}
+                      className="btn-primary px-6 py-3 inline-flex items-center space-x-2"
+                    >
+                      <Plus className="w-5 h-5" />
+                      <span>Add Your First Product</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {myProducts.map((product) => (
+                      <div key={product.id} className="card p-6">
+                        <div className="flex items-start space-x-4">
+                          <img 
+                            src={product.image} 
+                            alt={product.title}
+                            className="w-20 h-20 rounded-lg object-cover"
+                          />
+                          <div className="flex-1">
+                            <h3 className="font-bold text-gray-900 mb-1">{product.title}</h3>
+                            <p className="text-lg font-bold text-gray-900 mb-2">KSH {product.price.toFixed(2)}</p>
+                            <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                              {product.status}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-3 mt-4 pt-4 border-t border-gray-200">
+                          <button className="btn-secondary text-sm px-4 py-2 flex-1">
+                            Edit
+                          </button>
+                          <button className="btn-secondary text-sm px-4 py-2 flex-1 text-red-600 hover:bg-red-50">
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {activeTab === 'products' && showAddProduct && (
+              <>
+                <div className="flex items-center justify-between mb-8">
+                  <h1 className="text-3xl font-bold text-gray-900">
+                    Add New Product
+                  </h1>
+                  <button
+                    onClick={() => setShowAddProduct(false)}
+                    className="btn-secondary px-4 py-2"
+                  >
+                    Cancel
+                  </button>
+                </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Product Image Upload */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Product Image
-                </label>
-                <div
-                  onDragEnter={handleDrag}
-                  onDragLeave={handleDrag}
-                  onDragOver={handleDrag}
-                  onDrop={handleDrop}
-                  className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${
-                    dragActive
-                      ? 'border-primary bg-primary/5'
-                      : 'border-gray-300 hover:border-gray-400'
-                  }`}
-                >
-                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <div className="mb-2">
-                    <label htmlFor="file-upload" className="cursor-pointer">
-                      <span className="text-primary hover:text-primary-hover font-medium">
-                        Click to upload
-                      </span>
-                      <span className="text-gray-600"> or drag and drop</span>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Product Image
+                    </label>
+                    <div
+                      onDragEnter={handleDrag}
+                      onDragLeave={handleDrag}
+                      onDragOver={handleDrag}
+                      onDrop={handleDrop}
+                      className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${
+                        dragActive
+                          ? 'border-primary-600 bg-primary-600/5'
+                          : 'border-gray-300 hover:border-gray-400'
+                      }`}
+                    >
+                      {uploadedImage ? (
+                        <div className="space-y-4">
+                          <img src={uploadedImage} alt="Preview" className="w-32 h-32 object-cover rounded-lg mx-auto" />
+                          <button
+                            type="button"
+                            onClick={() => setUploadedImage(null)}
+                            className="text-sm text-red-600 hover:text-red-700"
+                          >
+                            Remove Image
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                          <div className="mb-2">
+                            <label htmlFor="file-upload" className="cursor-pointer">
+                              <span className="text-primary-600 hover:text-primary-700 font-medium">
+                                Click to upload
+                              </span>
+                              <span className="text-gray-600"> or drag and drop</span>
+                            </label>
+                            <input
+                              id="file-upload"
+                              type="file"
+                              className="hidden"
+                              onChange={handleFileInput}
+                              accept=".png,.jpg,.jpeg,.gif"
+                            />
+                          </div>
+                          <p className="text-sm text-gray-500">
+                            PNG, JPG or GIF (MAX. 800x400px)
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+                      Title
                     </label>
                     <input
-                      id="file-upload"
-                      type="file"
-                      className="hidden"
-                      onChange={handleFileInput}
-                      accept=".svg,.png,.jpg,.jpeg,.gif"
+                      type="text"
+                      id="title"
+                      name="title"
+                      value={formData.title}
+                      onChange={handleChange}
+                      placeholder="e.g., Handcrafted Wooden Bowl"
+                      className="input-field"
+                      required
                     />
                   </div>
-                  <p className="text-sm text-gray-500">
-                    SVG, PNG, JPG or GIF (MAX. 800x400px)
-                  </p>
-                </div>
-              </div>
 
-              {/* Title */}
-              <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  id="title"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleChange}
-                  placeholder="e.g., Handcrafted Wooden Bowl"
-                  className="input-field"
-                  required
-                />
-              </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+                        Category
+                      </label>
+                      <select
+                        id="category"
+                        name="category"
+                        value={formData.category}
+                        onChange={handleChange}
+                        className="input-field"
+                        required
+                      >
+                        <option value="">Select category</option>
+                        <option value="ceramics">Ceramics</option>
+                        <option value="textiles">Textiles</option>
+                        <option value="woodwork">Woodwork</option>
+                        <option value="jewelry">Jewelry</option>
+                        <option value="painting">Painting</option>
+                      </select>
+                    </div>
 
-              {/* Category and Subcategory */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
-                    Category
-                  </label>
-                  <select
-                    id="category"
-                    name="category"
-                    value={formData.category}
-                    onChange={handleChange}
-                    className="input-field"
-                    required
-                  >
-                    <option value="">Select category</option>
-                    <option value="ceramics">Ceramics</option>
-                    <option value="textiles">Textiles</option>
-                    <option value="woodwork">Woodwork</option>
-                    <option value="jewelry">Jewelry</option>
-                    <option value="painting">Painting</option>
-                  </select>
-                </div>
+                    <div>
+                      <label htmlFor="subcategory" className="block text-sm font-medium text-gray-700 mb-2">
+                        Subcategory
+                      </label>
+                      <select
+                        id="subcategory"
+                        name="subcategory"
+                        value={formData.subcategory}
+                        onChange={handleChange}
+                        className="input-field"
+                        required
+                      >
+                        <option value="">Select subcategory</option>
+                        <option value="functional">Functional</option>
+                        <option value="decorative">Decorative</option>
+                        <option value="wearable">Wearable</option>
+                      </select>
+                    </div>
+                  </div>
 
-                <div>
-                  <label htmlFor="subcategory" className="block text-sm font-medium text-gray-700 mb-2">
-                    Subcategory
-                  </label>
-                  <select
-                    id="subcategory"
-                    name="subcategory"
-                    value={formData.subcategory}
-                    onChange={handleChange}
-                    className="input-field"
-                    required
-                  >
-                    <option value="">Select subcategory</option>
-                    <option value="functional">Functional</option>
-                    <option value="decorative">Decorative</option>
-                    <option value="wearable">Wearable</option>
-                  </select>
-                </div>
-              </div>
+                  <div>
+                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                      Description
+                    </label>
+                    <textarea
+                      id="description"
+                      name="description"
+                      value={formData.description}
+                      onChange={handleChange}
+                      placeholder="Describe your masterpiece..."
+                      rows={5}
+                      className="input-field resize-none"
+                      required
+                    />
+                  </div>
 
-              {/* Description */}
-              <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
-                </label>
-                <textarea
-                  id="description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  placeholder="Describe your masterpiece..."
-                  rows={5}
-                  className="input-field resize-none"
-                  required
-                />
-              </div>
+                  <div>
+                    <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
+                      Price (KSH)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
+                        KSH
+                      </span>
+                      <input
+                        type="number"
+                        id="price"
+                        name="price"
+                        value={formData.price}
+                        onChange={handleChange}
+                        placeholder="0.00"
+                        step="0.01"
+                        min="0"
+                        className="input-field pl-16"
+                        required
+                      />
+                    </div>
+                  </div>
 
-              {/* Price */}
-              <div>
-                <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
-                  Price
-                </label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
-                    $
-                  </span>
-                  <input
-                    type="number"
-                    id="price"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleChange}
-                    placeholder="0.00"
-                    step="0.01"
-                    min="0"
-                    className="input-field pl-8"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <div className="flex justify-end pt-4">
-                <button
-                  type="submit"
-                  className="btn-primary px-8 py-3"
-                >
-                  Submit Product
-                </button>
-              </div>
-            </form>
+                  <div className="flex justify-end pt-4">
+                    <button
+                      type="submit"
+                      className="btn-primary px-8 py-3"
+                    >
+                      Submit Product
+                    </button>
+                  </div>
+                </form>
               </>
             )}
 
@@ -375,37 +467,7 @@ const ArtisanDashboard = () => {
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600">Customer: John Doe</span>
-                      <span className="font-bold text-gray-900">$45.00</span>
-                    </div>
-                  </div>
-                  <div className="card p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h3 className="font-bold text-gray-900">Order #1233</h3>
-                        <p className="text-sm text-gray-600">Wood Carving</p>
-                      </div>
-                      <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-sm font-medium rounded-full">
-                        Processing
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Customer: Jane Smith</span>
-                      <span className="font-bold text-gray-900">$120.00</span>
-                    </div>
-                  </div>
-                  <div className="card p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h3 className="font-bold text-gray-900">Order #1232</h3>
-                        <p className="text-sm text-gray-600">Textile Art</p>
-                      </div>
-                      <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
-                        Pending
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Customer: Mike Johnson</span>
-                      <span className="font-bold text-gray-900">$85.00</span>
+                      <span className="font-bold text-gray-900">KSH 45.00</span>
                     </div>
                   </div>
                 </div>
@@ -421,7 +483,7 @@ const ArtisanDashboard = () => {
                   <div className="card p-6 hover:shadow-md transition-shadow cursor-pointer">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                        <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center">
                           <User className="w-5 h-5 text-white" />
                         </div>
                         <div>
@@ -433,40 +495,6 @@ const ArtisanDashboard = () => {
                     </div>
                     <p className="text-sm text-gray-700 ml-13">
                       Hi! I'm interested in the ceramic vase. Do you ship internationally?
-                    </p>
-                  </div>
-                  <div className="card p-6 hover:shadow-md transition-shadow cursor-pointer">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gray-400 rounded-full flex items-center justify-center">
-                          <User className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-gray-900">David Brown</h3>
-                          <p className="text-sm text-gray-600">Custom order inquiry</p>
-                        </div>
-                      </div>
-                      <span className="text-xs text-gray-500">2 hours ago</span>
-                    </div>
-                    <p className="text-sm text-gray-700 ml-13">
-                      Can you create a custom wood carving? I have a specific design in mind.
-                    </p>
-                  </div>
-                  <div className="card p-6 hover:shadow-md transition-shadow cursor-pointer">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gray-400 rounded-full flex items-center justify-center">
-                          <User className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-gray-900">Emily Davis</h3>
-                          <p className="text-sm text-gray-600">Thank you message</p>
-                        </div>
-                      </div>
-                      <span className="text-xs text-gray-500">1 day ago</span>
-                    </div>
-                    <p className="text-sm text-gray-700 ml-13">
-                      Thank you so much! The textile art arrived safely and it's beautiful!
                     </p>
                   </div>
                 </div>

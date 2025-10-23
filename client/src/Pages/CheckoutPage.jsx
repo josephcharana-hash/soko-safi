@@ -5,7 +5,7 @@ import Navbar from '../Components/Layout/Navbar'
 import Footer from '../Components/Layout/Footer'
 
 const CheckoutPage = () => {
-  const navigate = useNavigate()
+  const _navigate = useNavigate()
   const [step, setStep] = useState(1) // 1: Shipping, 2: Payment, 3: Confirmation
   const [shippingInfo, setShippingInfo] = useState({
     fullName: '',

@@ -16,7 +16,7 @@ const BuyerDashboard = () => {
       price: 45.00,
       status: 'Delivered',
       date: '2025-10-10',
-      image: 'https://images.unsplash.com/photo-1578500494198-246f612d3b3d?w=100&h=100&fit=crop',
+      image: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=100&h=100&fit=crop',
       canReview: true
     },
     {
@@ -26,7 +26,7 @@ const BuyerDashboard = () => {
       price: 120.00,
       status: 'In Transit',
       date: '2025-10-14',
-      image: 'https://images.unsplash.com/photo-1551522435-a13afa10f103?w=100&h=100&fit=crop',
+      image: 'https://images.unsplash.com/photo-1595429426858-28f04f7db1f5?w=100&h=100&fit=crop',
       canReview: false
     },
     {
@@ -36,7 +36,7 @@ const BuyerDashboard = () => {
       price: 85.00,
       status: 'Processing',
       date: '2025-10-15',
-      image: 'https://images.unsplash.com/photo-1558769132-cb1aea3c8565?w=100&h=100&fit=crop',
+      image: 'https://images.unsplash.com/photo-1615529182904-14819c35db37?w=100&h=100&fit=crop',
       canReview: false
     }
   ]
@@ -70,19 +70,19 @@ const BuyerDashboard = () => {
       id: 1,
       name: 'Favorites',
       itemCount: 12,
-      image: 'https://images.unsplash.com/photo-1578500494198-246f612d3b3d?w=200&h=200&fit=crop'
+      image: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=200&h=200&fit=crop'
     },
     {
       id: 2,
       name: 'Wishlist',
       itemCount: 8,
-      image: 'https://images.unsplash.com/photo-1551522435-a13afa10f103?w=200&h=200&fit=crop'
+      image: 'https://images.unsplash.com/photo-1595429426858-28f04f7db1f5?w=200&h=200&fit=crop'
     },
     {
       id: 3,
       name: 'Gift Ideas',
       itemCount: 5,
-      image: 'https://images.unsplash.com/photo-1558769132-cb1aea3c8565?w=200&h=200&fit=crop'
+      image: 'https://images.unsplash.com/photo-1615529182904-14819c35db37?w=200&h=200&fit=crop'
     }
   ]
 
@@ -128,6 +128,32 @@ const BuyerDashboard = () => {
     }
   }
 
+  // Ensure Unsplash images include formatting params and provide a network-safe fallback.
+  const ensureUnsplashFormat = (url) => {
+    if (!url) return url
+    try {
+      // If the hostname is images.unsplash.com and there is no auto=format param, append common params.
+      const parsed = new URL(url)
+      if (parsed.hostname.includes('images.unsplash.com')) {
+        // If the URL already contains auto= or q= assume it's formatted
+        if (!/auto=|q=/.test(parsed.search)) {
+          const sep = parsed.search ? '&' : '?'
+          return `${url}${sep}auto=format&fit=crop&q=80`
+        }
+      }
+    } catch {
+      // ignore and return original
+    }
+    return url
+  }
+
+  const fallbackImage = (w = 200, h = 200) => `https://picsum.photos/${w}/${h}?random=${Math.floor(Math.random() * 10000)}`
+
+  const safeSrc = (url, w = 200, h = 200) => {
+    const formatted = ensureUnsplashFormat(url)
+    return formatted || fallbackImage(w, h)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Top Navigation */}
@@ -135,7 +161,7 @@ const BuyerDashboard = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link to="/" className="flex items-center space-x-2">
-              <Diamond className="w-6 h-6 text-primary" fill="currentColor" />
+              <Diamond className="w-6 h-6 text-primary-600" fill="currentColor" />
               <span className="text-xl font-bold text-gray-900">SokoDigital</span>
             </Link>
             
@@ -144,7 +170,7 @@ const BuyerDashboard = () => {
                 <Bell className="w-5 h-5" />
               </button>
               <button className="flex items-center space-x-2 p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100">
-                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
                   <User className="w-5 h-5 text-white" />
                 </div>
               </button>
@@ -177,7 +203,7 @@ const BuyerDashboard = () => {
                 onClick={() => setActiveTab('orders')}
                 className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors ${
                   activeTab === 'orders'
-                    ? 'bg-primary/10 text-primary'
+                    ? 'bg-primary-600/10 text-primary-600'
                     : 'text-gray-600 hover:bg-gray-50'
                 }`}
               >
@@ -237,21 +263,21 @@ const BuyerDashboard = () => {
                   <div className="card p-6">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-sm font-medium text-gray-600">Total Orders</h3>
-                      <ShoppingBag className="w-5 h-5 text-primary" />
+                      <ShoppingBag className="w-5 h-5 text-primary-600" />
                     </div>
                     <p className="text-3xl font-bold text-gray-900">{orders.length}</p>
                   </div>
                   <div className="card p-6">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-sm font-medium text-gray-600">Collections</h3>
-                      <Heart className="w-5 h-5 text-primary" />
+                      <Heart className="w-5 h-5 text-primary-600" />
                     </div>
                     <p className="text-3xl font-bold text-gray-900">{collections.length}</p>
                   </div>
                   <div className="card p-6">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-sm font-medium text-gray-600">Messages</h3>
-                      <MessageSquare className="w-5 h-5 text-primary" />
+                      <MessageSquare className="w-5 h-5 text-primary-600" />
                     </div>
                     <p className="text-3xl font-bold text-gray-900">{messages.length}</p>
                   </div>
@@ -263,7 +289,12 @@ const BuyerDashboard = () => {
                     {orders.slice(0, 3).map((order) => (
                       <div key={order.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
                         <div className="flex items-center space-x-4">
-                          <img src={order.image} alt={order.product} className="w-12 h-12 rounded-lg object-cover" />
+                          <img
+                            src={safeSrc(order.image, 48, 48)}
+                            alt={order.product}
+                            className="w-12 h-12 rounded-lg object-cover"
+                            onError={(e) => { e.currentTarget.src = fallbackImage(48, 48) }}
+                          />
                           <div>
                             <p className="font-medium text-gray-900">{order.product}</p>
                             <p className="text-sm text-gray-600">Order {order.id}</p>
@@ -290,10 +321,11 @@ const BuyerDashboard = () => {
                     <div key={order.id} className="card p-6">
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-start space-x-4">
-                          <img 
-                            src={order.image} 
+                          <img
+                            src={safeSrc(order.image, 80, 80)}
                             alt={order.product}
                             className="w-20 h-20 rounded-lg object-cover"
+                            onError={(e) => { e.currentTarget.src = fallbackImage(80, 80) }}
                           />
                           <div>
                             <h3 className="font-bold text-gray-900 text-lg">{order.product}</h3>
@@ -341,14 +373,14 @@ const BuyerDashboard = () => {
                     <div key={message.id} className="card p-6 hover:shadow-md transition-shadow cursor-pointer">
                       <div className="flex items-start justify-between">
                         <div className="flex items-start space-x-4">
-                          <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
+                          <div className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center">
                             <User className="w-6 h-6 text-white" />
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center space-x-2 mb-1">
                               <h3 className="font-bold text-gray-900">{message.artisan}</h3>
                               {message.unread && (
-                                <span className="w-2 h-2 bg-primary rounded-full"></span>
+                                <span className="w-2 h-2 bg-primary-600 rounded-full"></span>
                               )}
                             </div>
                             <p className="text-sm text-gray-700">{message.lastMessage}</p>
@@ -381,10 +413,11 @@ const BuyerDashboard = () => {
                       className="card group cursor-pointer hover:shadow-lg transition-shadow"
                     >
                       <div className="aspect-square overflow-hidden">
-                        <img 
-                          src={collection.image} 
+                        <img
+                          src={safeSrc(collection.image, 300, 300)}
                           alt={collection.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          onError={(e) => { e.currentTarget.src = fallbackImage(300, 300) }}
                         />
                       </div>
                       <div className="p-5">

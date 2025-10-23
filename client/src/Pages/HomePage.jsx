@@ -8,25 +8,25 @@ const HomePage = () => {
       id: 1,
       title: 'Ceramic Vase',
       description: 'Handcrafted ceramic vase with a unique glaze.',
-      image: 'https://images.unsplash.com/photo-1578500494198-246f612d3b3d?w=400&h=400&fit=crop'
+      image: '/images/ceramic-vase.jpg'
     },
     {
       id: 2,
       title: 'Woven Basket',
       description: 'Woven basket with intricate patterns and natural dyes.',
-      image: 'https://images.unsplash.com/photo-1595429426858-28f04f7db1f5?w=400&h=400&fit=crop'
+      image: '/images/woven-basket.jpg'
     },
     {
       id: 3,
       title: 'Wood Carving',
       description: 'Detailed wood carving of a native animal.',
-      image: 'https://images.unsplash.com/photo-1551522435-a13afa10f103?w=400&h=400&fit=crop'
+      image: '/images/wood-carving.jpg'
     },
     {
       id: 4,
       title: 'Textile Art',
       description: 'Colorful textile art piece depicting a local scene.',
-      image: 'https://images.unsplash.com/photo-1558769132-cb1aea3c8565?w=400&h=400&fit=crop'
+      image: '/images/textile-art.jpg'
     }
   ]
 
@@ -38,7 +38,7 @@ const HomePage = () => {
       <section 
         className="relative h-[500px] flex items-center justify-center text-white"
         style={{
-          backgroundImage: 'url(https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=1600&h=600&fit=crop)',
+          backgroundImage: 'url(/images/hero-bg.jpg)',
           backgroundSize: 'cover',
           backgroundPosition: 'center'
         }}
@@ -70,10 +70,10 @@ const HomePage = () => {
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {featuredWorks.map((work) => (
-            <div key={work.id} className="card group cursor-pointer hover:shadow-lg transition-shadow duration-300">
+            <Link key={work.id} to="/explore" className="card group cursor-pointer hover:shadow-lg transition-shadow duration-300">
               <div className="aspect-square overflow-hidden">
-                <img 
-                  src={work.image} 
+                <img
+                  src={work.image}
                   alt={work.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
@@ -86,7 +86,7 @@ const HomePage = () => {
                   {work.description}
                 </p>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </section>
