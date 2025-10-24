@@ -13,9 +13,7 @@ const RegisterPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    // Handle registration logic here
     console.log('Register:', { ...formData, userType })
-    // Redirect based on user type
     if (userType === 'artisan') {
       navigate('/artisan-dashboard')
     } else {
@@ -36,7 +34,7 @@ const RegisterPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link to="/" className="flex items-center space-x-2">
-              <Diamond className="w-6 h-6 text-primary" fill="currentColor" />
+              <Diamond className="w-6 h-6 text-primary-600" fill="currentColor" />
               <span className="text-xl font-bold text-gray-900">SokoDigital</span>
             </Link>
             
@@ -52,7 +50,7 @@ const RegisterPage = () => {
               </Link>
             </div>
             
-            <Link to="/login" className="btn-primary">
+            <Link to="/login" className="btn-primary px-6 py-2">
               Log In
             </Link>
           </div>
@@ -82,7 +80,7 @@ const RegisterPage = () => {
                     onClick={() => setUserType('artisan')}
                     className={`py-2.5 px-4 rounded-lg font-medium transition-all duration-200 ${
                       userType === 'artisan'
-                        ? 'bg-primary text-white'
+                        ? 'bg-primary-600 text-white'
                         : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                     }`}
                   >
@@ -93,7 +91,7 @@ const RegisterPage = () => {
                     onClick={() => setUserType('buyer')}
                     className={`py-2.5 px-4 rounded-lg font-medium transition-all duration-200 ${
                       userType === 'buyer'
-                        ? 'bg-primary text-white'
+                        ? 'bg-primary-600 text-white'
                         : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                     }`}
                   >
@@ -159,7 +157,7 @@ const RegisterPage = () => {
 
               <p className="text-center text-sm text-gray-600">
                 Already have an account?{' '}
-                <Link to="/login" className="text-primary hover:text-primary-hover font-medium">
+                <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium">
                   Log in
                 </Link>
               </p>

@@ -22,7 +22,8 @@ const CheckoutPage = () => {
     cardName: '',
     expiryDate: '',
     cvv: '',
-    paymentMethod: 'card' // card or paypal
+    mpesaPhone: '',
+    paymentMethod: 'mpesa'
   })
 
   // Mock cart data
@@ -259,7 +260,19 @@ const CheckoutPage = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-3">
                       Payment Method
                     </label>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setPaymentInfo({ ...paymentInfo, paymentMethod: 'mpesa' })}
+                        className={`p-4 rounded-lg border-2 transition-all ${
+                          paymentInfo.paymentMethod === 'mpesa'
+                            ? 'border-primary bg-primary/5'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="w-6 h-6 mx-auto mb-2 font-bold text-green-600">MP</div>
+                        <p className="font-medium">M-Pesa</p>
+                      </button>
                       <button
                         type="button"
                         onClick={() => setPaymentInfo({ ...paymentInfo, paymentMethod: 'card' })}
@@ -270,7 +283,7 @@ const CheckoutPage = () => {
                         }`}
                       >
                         <CreditCard className="w-6 h-6 mx-auto mb-2" />
-                        <p className="font-medium">Credit Card</p>
+                        <p className="font-medium">Card</p>
                       </button>
                       <button
                         type="button"
@@ -286,6 +299,45 @@ const CheckoutPage = () => {
                       </button>
                     </div>
                   </div>
+
+                  {paymentInfo.paymentMethod === 'mpesa' && (
+                    <form onSubmit={handlePaymentSubmit} className="space-y-4">
+                      <div>
+                        <label htmlFor="mpesaPhone" className="block text-sm font-medium text-gray-700 mb-2">
+                          M-Pesa Phone Number *
+                        </label>
+                        <input
+                          type="tel"
+                          id="mpesaPhone"
+                          name="mpesaPhone"
+                          value={paymentInfo.mpesaPhone}
+                          onChange={handlePaymentChange}
+                          placeholder="254712345678"
+                          className="input-field"
+                          required
+                        />
+                        <p className="text-sm text-gray-500 mt-1">Enter your M-Pesa registered phone number</p>
+                      </div>
+
+                      <div className="p-4 bg-green-50 rounded-lg">
+                        <p className="text-sm text-gray-700 mb-2">You will receive an M-Pesa prompt on your phone to complete the payment.</p>
+                        <p className="text-sm font-medium text-green-700">Total: KSH {total.toFixed(2)}</p>
+                      </div>
+
+                      <div className="flex justify-between pt-6">
+                        <button
+                          type="button"
+                          onClick={() => setStep(1)}
+                          className="btn-secondary px-6 py-3"
+                        >
+                          Back
+                        </button>
+                        <button type="submit" className="btn-primary px-6 py-3">
+                          Send M-Pesa Prompt
+                        </button>
+                      </div>
+                    </form>
+                  )}
 
                   {paymentInfo.paymentMethod === 'card' && (
                     <form onSubmit={handlePaymentSubmit} className="space-y-4">

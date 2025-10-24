@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useNavigate } from 'react-router-dom'
 import { Diamond, ShoppingCart, Heart, Star, MessageSquare, ArrowLeft, User } from 'lucide-react'
 import Navbar from '../Components/Layout/Navbar'
 import Footer from '../Components/Layout/Footer'
 
 const ProductDetailPage = () => {
   const { id } = useParams()
+  const navigate = useNavigate()
   const [quantity, setQuantity] = useState(1)
   const [activeImage, setActiveImage] = useState(0)
 
@@ -56,13 +57,12 @@ const ProductDetailPage = () => {
   }
 
   const handleAddToCart = () => {
-    console.log('Added to cart:', { product, quantity })
-    // Add to cart logic
+    alert(`Added ${quantity} ${product.title} to cart!`)
+    navigate('/cart')
   }
 
   const handleBuyNow = () => {
-    console.log('Buy now:', { product, quantity })
-    // Direct checkout logic
+    navigate('/checkout')
   }
 
   return (

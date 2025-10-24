@@ -175,7 +175,10 @@ const CartPage = () => {
                   {/* Trust Badges */}
                   <div className="mt-6 pt-6 border-t border-gray-200">
                     <p className="text-sm text-gray-600 mb-3">We accept:</p>
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center flex-wrap gap-2">
+                      <div className="px-3 py-2 bg-green-100 rounded text-xs font-medium text-green-700">
+                        M-Pesa
+                      </div>
                       <div className="px-3 py-2 bg-gray-100 rounded text-xs font-medium text-gray-700">
                         Visa
                       </div>
