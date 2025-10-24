@@ -1,6 +1,6 @@
 from flask_restful import Resource, Api
 from flask import Blueprint, request
-from models import db, Order
+from app.models import db, Order
 
 order_bp = Blueprint('order_bp', __name__)
 order_api = Api(order_bp)

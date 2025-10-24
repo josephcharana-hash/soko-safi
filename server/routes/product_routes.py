@@ -1,6 +1,6 @@
 from flask_restful import Resource, Api
 from flask import Blueprint, request
-from models import db, Product
+from app.models import db, Product
 
 product_bp = Blueprint('product_bp', __name__)
 product_api = Api(product_bp)

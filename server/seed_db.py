@@ -1,5 +1,5 @@
 from app import app
-from models import db, User, Product, Category, UserRole
+from app.models import db, User, Product, Category, UserRole
 from faker import Faker
 import random
 

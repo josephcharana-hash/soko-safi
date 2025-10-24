@@ -1,6 +1,6 @@
 from flask_restful import Resource, Api
 from flask import Blueprint, request
-from models import db, User
+from app.models import db, User
 
 user_bp = Blueprint('user_bp', __name__)
 user_api = Api(user_bp)

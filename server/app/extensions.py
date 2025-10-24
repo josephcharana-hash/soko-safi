@@ -1,7 +1,6 @@
 from flask_socketio import SocketIO
-from flask_sqlalchemy import SQLAlchemy
+from app.models import db
 
-db = SQLAlchemy()
 socketio = SocketIO(cors_allowed_origins="*")
 
 # Connected users storage

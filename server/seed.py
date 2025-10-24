@@ -1,4 +1,4 @@
-from models import db, User, Product
+from app.models import db, User, Product
 from run import app
 import random
 

@@ -1,7 +1,7 @@
 from flask import request
 from flask_socketio import emit, join_room
-from app.extensions import socketio, connected_users, db
-from app.models.message import Message
+from app.extensions import socketio, connected_users
+from app.models import db, Message
 
 @socketio.on('connect')
 def handle_connect():

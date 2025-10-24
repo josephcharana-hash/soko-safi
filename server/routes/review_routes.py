@@ -1,6 +1,6 @@
 from flask_restful import Resource, Api
 from flask import Blueprint, request
-from models import db, Review
+from app.models import db, Review
 
 review_bp = Blueprint('review_bp', __name__)
 review_api = Api(review_bp)

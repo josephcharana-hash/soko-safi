@@ -1,6 +1,6 @@
 from flask_restful import Resource, Api
 from flask import Blueprint, request
-from models import db, Cart, CartItem
+from app.models import db, Cart, CartItem
 
 cart_bp = Blueprint('cart_bp', __name__)
 cart_api = Api(cart_bp)
