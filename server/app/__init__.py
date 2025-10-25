@@ -1,6 +1,6 @@
 import os
 from flask import Flask
-from app.extensions import db, socketio
+from app.extensions import db, socketio, session
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -11,8 +11,17 @@ def create_app():
     flask_app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
     flask_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
+    # Session configuration
+    flask_app.config['SESSION_TYPE'] = 'filesystem'
+    flask_app.config['SESSION_PERMANENT'] = False
+    flask_app.config['SESSION_USE_SIGNER'] = True
+    flask_app.config['SESSION_KEY_PREFIX'] = 'soko_safi:'
+    flask_app.config['SESSION_FILE_DIR'] = os.path.join(os.getcwd(), 'instance', 'sessions')
+    flask_app.config['SESSION_FILE_THRESHOLD'] = 500
+    
     # Initialize extensions
     db.init_app(flask_app)
+    session.init_app(flask_app)
     socketio.init_app(flask_app)
     
     # Import models to ensure they are registered
@@ -22,15 +31,21 @@ def create_app():
     from . import sockets
     
     # Register route blueprints
-    from routes.user_routes import user_bp
-    from routes.product_routes import product_bp
-    from routes.cart_routes import cart_bp
-    from routes.category_routes import category_bp
-    from routes.order_routes import order_bp
-    from routes.payment_routes import payment_bp
-    from routes.review_routes import review_bp
-    from routes.message_routes import message_bp
+    from app.routes.auth_routes import auth_bp
+    from app.routes.user_routes import user_bp
+    from app.routes.product_routes import product_bp
+    from app.routes.cart_routes import cart_bp
+    from app.routes.category_routes import category_bp
+    from app.routes.order_routes import order_bp
+    from app.routes.payment_routes import payment_bp
+    from app.routes.review_routes import review_bp
+    from app.routes.message_routes import message_bp
+    from app.routes.favorite_routes import favorite_bp
+    from app.routes.follow_routes import follow_bp
+    from app.routes.notification_routes import notification_bp
+    from app.routes.artisan_routes import artisan_bp
     
+    flask_app.register_blueprint(auth_bp, url_prefix='/api/auth')
     flask_app.register_blueprint(user_bp, url_prefix='/api/users')
     flask_app.register_blueprint(product_bp, url_prefix='/api/products')
     flask_app.register_blueprint(cart_bp, url_prefix='/api/cart')
@@ -39,6 +54,10 @@ def create_app():
     flask_app.register_blueprint(payment_bp, url_prefix='/api/payments')
     flask_app.register_blueprint(review_bp, url_prefix='/api/reviews')
     flask_app.register_blueprint(message_bp, url_prefix='/api/messages')
+    flask_app.register_blueprint(favorite_bp, url_prefix='/api/favorites')
+    flask_app.register_blueprint(follow_bp, url_prefix='/api/follows')
+    flask_app.register_blueprint(notification_bp, url_prefix='/api/notifications')
+    flask_app.register_blueprint(artisan_bp, url_prefix='/api/artisan')
     
     # Routes
     @flask_app.route('/')
