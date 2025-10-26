@@ -1,6 +1,11 @@
 .marscode
 .env
-venv
+venv/
+
+# M-Pesa Configuration
+server/.mpesa_keys
+server/mpesa_*.pem
+server/certificates/
 
 # Database
 server/instance/
@@ -22,6 +27,10 @@ server/*.egg-info/
 server/.venv/
 server/venv/
 server/soko_env/
+
+# Project Documentation
+summary.md
+*.summary.md
 
 # Client
 client/node_modules/
