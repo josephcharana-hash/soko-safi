@@ -14,7 +14,11 @@ category_api = Api(category_bp)
 class CategoryListResource(Resource):
     def get(self):
         """Get all categories - Public access"""
-        categories = Category.query.filter_by(deleted_at=None).all()
+        # Support databases that don't have the soft-delete column yet
+        if hasattr(Category, 'deleted_at'):
+            categories = Category.query.filter_by(deleted_at=None).all()
+        else:
+            categories = Category.query.all()
         return [{
             'id': c.id,
             'name': c.name,
@@ -85,7 +89,11 @@ class CategoryResource(Resource):
         """Delete category - Admin only"""
         category = Category.query.get_or_404(category_id)
         from datetime import datetime
-        category.deleted_at = datetime.utcnow()
+        # If soft-delete column exists, mark deleted_at; otherwise remove the record
+        if hasattr(category, 'deleted_at'):
+            category.deleted_at = datetime.utcnow()
+        else:
+            db.session.delete(category)
         db.session.commit()
         
         return {'message': 'Category deleted successfully'}, 200
@@ -93,7 +101,10 @@ class CategoryResource(Resource):
 class SubcategoryListResource(Resource):
     def get(self):
         """Get all subcategories - Public access"""
-        subcategories = Subcategory.query.filter_by(deleted_at=None).all()
+        if hasattr(Subcategory, 'deleted_at'):
+            subcategories = Subcategory.query.filter_by(deleted_at=None).all()
+        else:
+            subcategories = Subcategory.query.all()
         return [{
             'id': s.id,
             'category_id': s.category_id,
@@ -171,7 +182,10 @@ class SubcategoryResource(Resource):
         """Delete subcategory - Admin only"""
         subcategory = Subcategory.query.get_or_404(subcategory_id)
         from datetime import datetime
-        subcategory.deleted_at = datetime.utcnow()
+        if hasattr(subcategory, 'deleted_at'):
+            subcategory.deleted_at = datetime.utcnow()
+        else:
+            db.session.delete(subcategory)
         db.session.commit()
         
         return {'message': 'Subcategory deleted successfully'}, 200

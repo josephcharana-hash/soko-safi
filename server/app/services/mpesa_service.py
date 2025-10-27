@@ -18,10 +18,10 @@ class MpesaService:
     def __init__(self):
         self.consumer_key = os.getenv('MPESA_CONSUMER_KEY')
         self.consumer_secret = os.getenv('MPESA_CONSUMER_SECRET')
-        self.shortcode = os.getenv('MPESA_SHORTCODE', '174379')
-        self.passkey = os.getenv('MPESA_PASSKEY', 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919')  # Test passkey
-        self.base_url = 'https://sandbox.safaricom.co.ke'  # Change to live URL in production
-
+        self.shortcode = os.getenv('MPESA_SHORTCODE', '174379') # Test shortcode
+        self.passkey = os.getenv('MPESA_PASSKEY', 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919') # Test passkey
+        self.base_url = 'https://sandbox.safaricom.co.ke' # Change to live URL in production
+ 
     def get_access_token(self):
         """Get M-Pesa access token"""
         try:
@@ -41,7 +41,6 @@ class MpesaService:
         """Initiate STK Push for customer payment"""
         try:
             access_token = self.get_access_token()
-
             # Format phone number (remove + and ensure 254 format)
             phone = phone_number.replace('+', '')
             if phone.startswith('0'):
@@ -49,7 +48,7 @@ class MpesaService:
             elif not phone.startswith('254'):
                 phone = '254' + phone
 
-            # Generate timestamp and password
+            # Generate timestamp and password 
             timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
             password = base64.b64encode(f"{self.shortcode}{self.passkey}{timestamp}".encode()).decode()
 
@@ -144,10 +143,7 @@ class MpesaService:
 
         except Exception as e:
             current_app.logger.error(f"B2C disbursement failed: {str(e)}")
-            return {
-                'success': False,
-                'error': str(e)
-            }
+            return {'success': False, 'error': str(e)}
 
     def process_stk_callback(self, callback_data):
         """Process STK Push callback"""
@@ -157,7 +153,7 @@ class MpesaService:
             checkout_request_id = callback_data.get('Body', {}).get('stkCallback', {}).get('CheckoutRequestID')
             callback_metadata = callback_data.get('Body', {}).get('stkCallback', {}).get('CallbackMetadata', {})
 
-            # Find payment by checkout request ID (you'll need to store this mapping)
+            # Find payment by checkout request ID (you'll need to store this mapping) 
             payment = Payment.query.filter_by(mpesa_transaction_id=checkout_request_id).first()
             if not payment:
                 current_app.logger.error(f"Payment not found for checkout_request_id: {checkout_request_id}")
@@ -168,7 +164,7 @@ class MpesaService:
                 payment.status = PaymentStatus.success
                 payment.mpesa_transaction_id = callback_metadata.get('Item', [{}])[1].get('Value')  # MpesaReceiptNumber
                 payment.received_at = datetime.utcnow()
-                payment.callback_payload = json.dumps(callback_data)
+                payment.callback_payload = callback_data
 
                 # Trigger artisan disbursements
                 self._trigger_artisan_disbursements(payment.id)
@@ -184,7 +180,7 @@ class MpesaService:
                 # Failed
                 payment.status = PaymentStatus.failed
                 payment.transaction_status_reason = result_desc
-                payment.callback_payload = json.dumps(callback_data)
+                payment.callback_payload = json.dumps(callback_data) 
 
                 # Notify user of failure
                 send_notification(payment.order.user_id, 'payment_failed', {
@@ -196,7 +192,7 @@ class MpesaService:
             db.session.commit()
 
         except Exception as e:
-            current_app.logger.error(f"STK callback processing failed: {str(e)}")
+            current_app.logger.error(f"STK callback processing failed: {str(e)}") 
             db.session.rollback()
 
     def process_b2c_result(self, result_data):
@@ -205,7 +201,7 @@ class MpesaService:
             result_code = result_data.get('Result', {}).get('ResultCode')
             result_desc = result_data.get('Result', {}).get('ResultDesc')
             transaction_id = result_data.get('Result', {}).get('TransactionId')
-            conversation_id = result_data.get('Result', {}).get('ConversationId')
+            conversation_id = result_data.get('Result', {}).get('ConversationId') 
 
             # Find disbursement by conversation ID (you'll need to store this mapping)
             disbursement = ArtisanDisbursement.query.filter_by(mpesa_transaction_id=conversation_id).first()
@@ -218,7 +214,7 @@ class MpesaService:
                 disbursement.status = DisbursementStatus.success
                 disbursement.mpesa_transaction_id = transaction_id
                 disbursement.completed_at = datetime.utcnow()
-                disbursement.callback_payload = json.dumps(result_data)
+                disbursement.callback_payload = json.dumps(result_data) 
 
                 # Notify artisan
                 send_notification(disbursement.artisan_id, 'disbursement_success', {
@@ -229,13 +225,13 @@ class MpesaService:
             else:
                 # Failed - implement retry logic
                 disbursement.failure_reason = result_desc
-                disbursement.callback_payload = json.dumps(result_data)
+                disbursement.callback_payload = json.dumps(result_data) 
                 self._handle_disbursement_failure(disbursement)
 
             db.session.commit()
 
         except Exception as e:
-            current_app.logger.error(f"B2C result processing failed: {str(e)}")
+            current_app.logger.error(f"B2C result processing failed: {str(e)}") 
             db.session.rollback()
 
     def _trigger_artisan_disbursements(self, payment_id):
@@ -269,25 +265,26 @@ class MpesaService:
                 db.session.add(disbursement)
                 db.session.commit()
 
-                # Trigger disbursement
+                # Trigger disbursement 
                 result = self.disburse_to_artisan(disbursement.id)
                 if result['success']:
                     disbursement.status = DisbursementStatus.processing
                     disbursement.mpesa_transaction_id = result.get('conversation_id')
                 else:
-                    disbursement.status = DisbursementStatus.failed
+                    disbursement.status = DisbursementStatus.failed 
                     disbursement.failure_reason = result.get('error')
 
                 db.session.commit()
 
         except Exception as e:
-            current_app.logger.error(f"Failed to trigger artisan disbursements: {str(e)}")
+            current_app.logger.error(f"Failed to trigger artisan disbursements: {str(e)}") 
+            db.session.rollback()
 
     def _handle_disbursement_failure(self, disbursement):
         """Handle failed disbursement with retry logic"""
         try:
             disbursement.retry_count += 1
-            disbursement.last_retry_at = datetime.utcnow()
+            disbursement.last_retry_at = datetime.utcnow() 
 
             if disbursement.retry_count < 5:
                 # Schedule retry with exponential backoff
@@ -303,7 +300,7 @@ class MpesaService:
                 send_notification(disbursement.artisan_id, 'disbursement_retry', {
                     'amount': float(disbursement.amount),
                     'retry_count': disbursement.retry_count,
-                    'next_retry': (datetime.utcnow() + timedelta(seconds=delay)).isoformat()
+                    'next_retry': (datetime.utcnow() + timedelta(seconds=delay)).isoformat() 
                 })
 
             else:
@@ -320,7 +317,7 @@ class MpesaService:
                 # TODO: Notify admin for manual processing
 
         except Exception as e:
-            current_app.logger.error(f"Failed to handle disbursement failure: {str(e)}")
+            current_app.logger.error(f"Failed to handle disbursement failure: {str(e)}") 
 
 
 # Global service instance

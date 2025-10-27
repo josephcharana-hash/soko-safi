@@ -141,7 +141,7 @@ const BuyerDashboard = () => {
           return `${url}${sep}auto=format&fit=crop&q=80`
         }
       }
-    } catch {
+    } catch (e) {
       // ignore and return original
     }
     return url
@@ -289,12 +289,7 @@ const BuyerDashboard = () => {
                     {orders.slice(0, 3).map((order) => (
                       <div key={order.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
                         <div className="flex items-center space-x-4">
-                          <img
-                            src={safeSrc(order.image, 48, 48)}
-                            alt={order.product}
-                            className="w-12 h-12 rounded-lg object-cover"
-                            onError={(e) => { e.currentTarget.src = fallbackImage(48, 48) }}
-                          />
+                          <img src={order.image} alt={order.product} className="w-12 h-12 rounded-lg object-cover" />
                           <div>
                             <p className="font-medium text-gray-900">{order.product}</p>
                             <p className="text-sm text-gray-600">Order {order.id}</p>
@@ -321,11 +316,10 @@ const BuyerDashboard = () => {
                     <div key={order.id} className="card p-6">
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-start space-x-4">
-                          <img
-                            src={safeSrc(order.image, 80, 80)}
+                          <img 
+                            src={order.image} 
                             alt={order.product}
                             className="w-20 h-20 rounded-lg object-cover"
-                            onError={(e) => { e.currentTarget.src = fallbackImage(80, 80) }}
                           />
                           <div>
                             <h3 className="font-bold text-gray-900 text-lg">{order.product}</h3>
@@ -413,11 +407,10 @@ const BuyerDashboard = () => {
                       className="card group cursor-pointer hover:shadow-lg transition-shadow"
                     >
                       <div className="aspect-square overflow-hidden">
-                        <img
-                          src={safeSrc(collection.image, 300, 300)}
+                        <img 
+                          src={collection.image} 
                           alt={collection.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          onError={(e) => { e.currentTarget.src = fallbackImage(300, 300) }}
                         />
                       </div>
                       <div className="p-5">
