@@ -14,20 +14,52 @@ order_api = Api(order_bp)
 class OrderListResource(Resource):
     @require_auth
     def get(self):
-        """Get all orders - Admin only"""
+        """Get orders - Admin gets all, users get their own orders"""
         from flask import session
-        if session.get('user_role') != 'admin':
-            return {'error': 'Admin access required'}, 403
-        
-        orders = Order.query.filter_by(deleted_at=None).all()
-        return [{
-            'id': o.id,
-            'user_id': o.user_id,
-            'status': o.status.value if o.status else None,
-            'total_amount': float(o.total_amount) if o.total_amount else 0,
-            'created_at': o.created_at.isoformat() if o.created_at else None,
-            'updated_at': o.updated_at.isoformat() if o.updated_at else None
-        } for o in orders]
+        from app.models import User, OrderItem, Product
+
+        current_user_id = session.get('user_id')
+        user_role = session.get('user_role')
+
+        if user_role == 'admin':
+            # Admin gets all orders
+            orders = Order.query.filter_by(deleted_at=None).all()
+        else:
+            # Regular users get their own orders
+            orders = Order.query.filter_by(user_id=current_user_id, deleted_at=None).all()
+
+        # Enhance orders with additional data
+        enhanced_orders = []
+        for order in orders:
+            # Get order items with product details
+            order_items = db.session.query(OrderItem, Product).join(
+                Product, OrderItem.product_id == Product.id
+            ).filter(OrderItem.order_id == order.id, OrderItem.deleted_at.is_(None)).all()
+
+            # Get user details for the order
+            user = User.query.get(order.user_id) if order.user_id else None
+
+            enhanced_order = {
+                'id': order.id,
+                'user_id': order.user_id,
+                'user_name': user.name if user and user.name else f"{user.first_name} {user.last_name}".strip() if user else 'Unknown User',
+                'user_email': user.email if user else '',
+                'status': order.status.value if order.status else 'pending',
+                'total_amount': float(order.total_amount) if order.total_amount else 0,
+                'created_at': order.created_at.isoformat() if order.created_at else None,
+                'updated_at': order.updated_at.isoformat() if order.updated_at else None,
+                'items': [{
+                    'product_id': item.product_id,
+                    'product_title': product.title if product else 'Unknown Product',
+                    'quantity': item.quantity,
+                    'unit_price': float(item.unit_price) if item.unit_price else 0,
+                    'total_price': float(item.total_price) if item.total_price else 0,
+                    'artisan_id': item.artisan_id
+                } for item, product in order_items]
+            }
+            enhanced_orders.append(enhanced_order)
+
+        return enhanced_orders
     
     @require_auth
     def post(self):

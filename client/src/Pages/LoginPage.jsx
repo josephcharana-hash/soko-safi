@@ -6,7 +6,7 @@ import LoadingSpinner from '../Components/LoadingSpinner'
 
 const LoginPage = () => {
   const navigate = useNavigate()
-  const { login } = useAuth()
+  const { login, loading: authLoading, error: authError, clearError } = useAuth()
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -41,18 +41,21 @@ const LoginPage = () => {
     }
 
     try {
+      clearError(); // Clear any previous auth errors
       const result = await login(formData)
+      
+      // Redirect based on user role
       const userRole = result.user?.role || 'buyer'
       
       if (userRole === 'artisan') {
-        navigate('/artisan-dashboard')
+        navigate('/artisan-dashboard', { replace: true })
       } else if (userRole === 'admin') {
-        navigate('/admin-dashboard')
+        navigate('/admin-dashboard', { replace: true })
       } else {
-        navigate('/buyer-dashboard')
+        navigate('/', { replace: true }) // Redirect buyers to home
       }
     } catch (error) {
-      setErrors({ general: error.message || 'Login failed. Please try again.' })
+      setErrors({ general: error.message || 'Login failed. Please check your credentials and try again.' })
     } finally {
       setIsLoading(false)
     }
@@ -103,9 +106,9 @@ const LoginPage = () => {
             </p>
           </div>
 
-          {errors.general && (
+          {(errors.general || authError) && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-700 text-sm font-medium">{errors.general}</p>
+              <p className="text-red-700 text-sm font-medium">{errors.general || authError}</p>
             </div>
           )}
 
@@ -187,10 +190,10 @@ const LoginPage = () => {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || authLoading}
               className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
             >
-              {isLoading ? (
+              {(isLoading || authLoading) ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   <span>Signing in...</span>

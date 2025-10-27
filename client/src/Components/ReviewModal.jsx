@@ -1,14 +1,17 @@
 import { useState } from 'react'
 import { X, Star } from 'lucide-react'
 
-const ReviewModal = ({ isOpen, onClose, product }) => {
+const ReviewModal = ({ isOpen, onClose, product, onSubmit }) => {
   const [rating, setRating] = useState(0)
   const [review, setReview] = useState('')
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    console.log('Review submitted:', { rating, review, product })
-    // Add review submission logic here
+    if (onSubmit) {
+      onSubmit({ rating, review })
+    } else {
+      console.log('Review submitted:', { rating, review, product })
+    }
     onClose()
     setRating(0)
     setReview('')

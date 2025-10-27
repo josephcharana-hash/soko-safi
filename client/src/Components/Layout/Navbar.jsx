@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Diamond, ShoppingCart, MessageSquare, User, Menu, X, Search, Heart, LogOut } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
+import { useCart } from '../../hooks/useCart.jsx'
 
 const Navbar = ({ showAuthButtons = true }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const location = useLocation()
-  const { user, logout } = useAuth()
+  const { user, logout, isAuthenticated, isArtisan } = useAuth()
+  const { cartCount } = useCart()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -103,9 +105,11 @@ const Navbar = ({ showAuthButtons = true }) => {
                   className="relative p-2.5 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors group"
                 >
                   <ShoppingCart className="w-5 h-5" />
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary-600 text-white text-xs rounded-full flex items-center justify-center font-semibold animate-bounce">
-                    3
-                  </span>
+                  {cartCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary-600 text-white text-xs rounded-full flex items-center justify-center font-semibold animate-bounce">
+                      {cartCount > 99 ? '99+' : cartCount}
+                    </span>
+                  )}
                   <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-0 h-0.5 bg-primary-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-200"></div>
                 </Link>
                 <div className="relative group">
@@ -117,11 +121,11 @@ const Navbar = ({ showAuthButtons = true }) => {
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                     <div className="py-2">
                       <div className="px-4 py-2 border-b border-gray-100">
-                        <p className="text-sm font-medium text-gray-900">{user.full_name}</p>
-                        <p className="text-xs text-gray-500">{user.email}</p>
+                        <p className="text-sm font-medium text-gray-900">{user?.full_name || user?.name || 'User'}</p>
+                        <p className="text-xs text-gray-500">{user?.email}</p>
                       </div>
                       <Link
-                        to={user.user_type === 'artisan' ? '/artisan-dashboard' : '/buyer-dashboard'}
+                        to={isArtisan ? '/artisan-dashboard' : '/buyer-dashboard'}
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
                         Dashboard
@@ -215,7 +219,11 @@ const Navbar = ({ showAuthButtons = true }) => {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <span>Cart</span>
-                  <span className="bg-primary-600 text-white text-xs px-2 py-1 rounded-full font-semibold">3</span>
+                  {cartCount > 0 && (
+                    <span className="bg-primary-600 text-white text-xs px-2 py-1 rounded-full font-semibold">
+                      {cartCount > 99 ? '99+' : cartCount}
+                    </span>
+                  )}
                 </Link>
                 <Link
                   to="/messages"
@@ -226,7 +234,7 @@ const Navbar = ({ showAuthButtons = true }) => {
                   <span className="w-2 h-2 bg-red-500 rounded-full"></span>
                 </Link>
                 <Link
-                  to={user.user_type === 'artisan' ? '/artisan-dashboard' : '/buyer-dashboard'}
+                  to={isArtisan ? '/artisan-dashboard' : '/buyer-dashboard'}
                   className="block px-3 py-3 text-gray-700 hover:text-primary-600 font-medium rounded-lg hover:bg-gray-50 transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >

@@ -6,6 +6,7 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     checkAuth();
@@ -13,34 +14,100 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuth = async () => {
     try {
+      setError(null);
       const data = await api.auth.getSession();
-      if (data.authenticated) setUser(data.user);
+      if (data.authenticated && data.user) {
+        setUser(data.user);
+      } else {
+        setUser(null);
+      }
     } catch (error) {
-      // Silently fail if backend is not running
+      console.warn('Auth check failed:', error.message);
+      setUser(null);
+      // Don't set error for session check failures
     } finally {
       setLoading(false);
     }
   };
 
   const login = async (credentials) => {
-    const data = await api.auth.login(credentials);
-    setUser(data.user);
-    return data;
+    try {
+      setError(null);
+      setLoading(true);
+      const data = await api.auth.login(credentials);
+      if (data.user) {
+        setUser(data.user);
+      }
+      return data;
+    } catch (error) {
+      setError(error.message);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   };
 
   const register = async (userData) => {
-    const data = await api.auth.register(userData);
-    setUser(data.user);
-    return data;
+    try {
+      setError(null);
+      setLoading(true);
+      const data = await api.auth.register(userData);
+      if (data.user) {
+        setUser(data.user);
+      }
+      return data;
+    } catch (error) {
+      setError(error.message);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   };
 
   const logout = async () => {
-    await api.auth.logout();
-    setUser(null);
+    try {
+      setError(null);
+      await api.auth.logout();
+    } catch (error) {
+      console.warn('Logout error:', error.message);
+    } finally {
+      setUser(null);
+    }
+  };
+
+  const updateProfile = async (profileData) => {
+    try {
+      setError(null);
+      const data = await api.auth.updateProfile(profileData);
+      if (data.user) {
+        setUser(data.user);
+      }
+      return data;
+    } catch (error) {
+      setError(error.message);
+      throw error;
+    }
+  };
+
+  const clearError = () => setError(null);
+
+  const value = {
+    user,
+    loading,
+    error,
+    login,
+    register,
+    logout,
+    updateProfile,
+    checkAuth,
+    clearError,
+    isAuthenticated: !!user,
+    isArtisan: user?.role === 'artisan',
+    isBuyer: user?.role === 'buyer',
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, setUser }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
@@ -52,4 +119,45 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within AuthProvider');
   }
   return context;
+};
+
+// Higher-order component for protected routes
+export const withAuth = (Component, requiredRole = null) => {
+  return function AuthenticatedComponent(props) {
+    const { user, loading } = useAuth();
+    
+    if (loading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
+        </div>
+      );
+    }
+    
+    if (!user) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Authentication Required</h2>
+            <p className="text-gray-600 mb-6">Please log in to access this page.</p>
+            <a href="/login" className="btn-primary">Go to Login</a>
+          </div>
+        </div>
+      );
+    }
+    
+    if (requiredRole && user.role !== requiredRole) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
+            <p className="text-gray-600 mb-6">You don't have permission to access this page.</p>
+            <a href="/" className="btn-primary">Go Home</a>
+          </div>
+        </div>
+      );
+    }
+    
+    return <Component {...props} />;
+  };
 };

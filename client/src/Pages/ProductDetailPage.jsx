@@ -5,6 +5,7 @@ import Navbar from '../Components/Layout/Navbar'
 import Footer from '../Components/Layout/Footer'
 import LazyImage from '../Components/LazyImage'
 import LoadingSpinner from '../Components/LoadingSpinner'
+import ReviewModal from '../Components/ReviewModal'
 import { api } from '../services/api'
 
 const ProductDetailPage = () => {
@@ -15,6 +16,7 @@ const ProductDetailPage = () => {
   const [selectedSize, setSelectedSize] = useState('')
   const [isWishlisted, setIsWishlisted] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
+  const [showReviewModal, setShowReviewModal] = useState(false)
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -132,16 +134,22 @@ const ProductDetailPage = () => {
 
   const handleAddToCart = async () => {
     try {
-      await api.cart.items.create({ product_id: product.id, quantity })
+      await api.cart.add(product.id, quantity)
       alert(`Added ${quantity} ${product.title} to cart!`)
-      navigate('/cart')
     } catch (error) {
+      console.error('Failed to add to cart:', error)
       alert('Failed to add item to cart. Please try again.')
     }
   }
 
-  const handleBuyNow = () => {
-    navigate('/checkout')
+  const handleBuyNow = async () => {
+    try {
+      await api.cart.add(product.id, quantity)
+      navigate('/checkout')
+    } catch (error) {
+      console.error('Failed to add to cart:', error)
+      alert('Failed to add item to cart. Please try again.')
+    }
   }
 
   const handleWishlistToggle = async () => {
@@ -149,10 +157,11 @@ const ProductDetailPage = () => {
       if (isWishlisted) {
         await api.favorites.remove(product.id)
       } else {
-        await api.favorites.add({ product_id: product.id })
+        await api.favorites.add(product.id)
       }
       setIsWishlisted(!isWishlisted)
     } catch (error) {
+      console.error('Failed to update wishlist:', error)
       alert('Failed to update wishlist. Please try again.')
     }
   }
@@ -166,6 +175,57 @@ const ProductDetailPage = () => {
       })
     } else {
       setShowShareModal(true)
+    }
+  }
+
+  const handleWriteReview = () => {
+    setShowReviewModal(true)
+  }
+
+  const handleReviewSubmit = async (reviewData) => {
+    try {
+      await api.reviews.create({
+        product_id: product.id,
+        rating: reviewData.rating,
+        comment: reviewData.review
+      })
+      alert('Review submitted successfully!')
+      setShowReviewModal(false)
+      // Optionally refresh the page or update reviews
+      window.location.reload()
+    } catch (error) {
+      console.error('Failed to submit review:', error)
+      alert('Failed to submit review. Please try again.')
+    }
+  }
+
+  const handleMessageArtisan = async () => {
+    try {
+      // Check if conversation already exists, if not create one
+      const conversations = await api.messages.getConversations()
+      const existingConversation = conversations.find(conv =>
+        conv.artisan_id === productWithDefaults.artisan?.id
+      )
+
+      if (existingConversation) {
+        navigate(`/messages/${existingConversation.id}`)
+      } else {
+        // Create new conversation by sending first message
+        await api.messages.send(productWithDefaults.artisan?.id, `Hi! I'm interested in your ${product.title}.`)
+        // Refresh conversations and navigate to the new one
+        const updatedConversations = await api.messages.getConversations()
+        const newConversation = updatedConversations.find(conv =>
+          conv.artisan_id === productWithDefaults.artisan?.id
+        )
+        if (newConversation) {
+          navigate(`/messages/${newConversation.id}`)
+        } else {
+          navigate('/messages')
+        }
+      }
+    } catch (error) {
+      console.error('Failed to start conversation:', error)
+      alert('Failed to start conversation. Please try again.')
     }
   }
 
@@ -286,17 +346,17 @@ const ProductDetailPage = () => {
                 {/* Price */}
                 <div className="mb-6">
                   <div className="flex items-center space-x-3 mb-2">
-                    <span className="text-4xl font-bold text-gray-900">
-                      KSh {(product.price * 130).toLocaleString()}
-                    </span>
+                      <span className="text-4xl font-bold text-gray-900">
+                        KSh {product.price.toLocaleString()}
+                      </span>
                     {product.originalPrice && (
                       <span className="text-xl text-gray-500 line-through">
-                        KSh {(product.originalPrice * 130).toLocaleString()}
+                        KSh {product.originalPrice.toLocaleString()}
                       </span>
                     )}
                     {product.originalPrice && (
                       <span className="bg-red-100 text-red-700 text-sm font-semibold px-2 py-1 rounded-full">
-                        Save KSh {((product.originalPrice - product.price) * 130).toLocaleString()}
+                        Save KSh {(product.originalPrice - product.price).toLocaleString()}
                       </span>
                     )}
                   </div>
@@ -374,7 +434,7 @@ const ProductDetailPage = () => {
                   >
                     <span>Buy Now</span>
                     <span className="text-lg">•</span>
-                    <span>KSh {(product.price * quantity * 130).toLocaleString()}</span>
+                    <span>KSh {(product.price * quantity).toLocaleString()}</span>
                   </button>
                   <button
                     onClick={handleAddToCart}
@@ -384,13 +444,13 @@ const ProductDetailPage = () => {
                     <ShoppingCart className="w-5 h-5" />
                     <span>Add to Cart</span>
                   </button>
-                  <Link
-                    to={`/messages/${productWithDefaults.artisan?.id || 1}`}
+                  <button
+                    onClick={handleMessageArtisan}
                     className="w-full bg-white border-2 border-gray-200 hover:border-primary-300 text-gray-700 hover:text-primary-700 font-semibold py-4 px-6 rounded-xl transition-colors duration-200 flex items-center justify-center space-x-2"
                   >
                     <MessageSquare className="w-5 h-5" />
                     <span>Message Artisan</span>
-                  </Link>
+                  </button>
                 </div>
               </div>
 
@@ -499,7 +559,10 @@ const ProductDetailPage = () => {
                 <h2 className="text-2xl font-bold text-gray-900">
                   Customer Reviews ({productWithDefaults.reviews.length})
                 </h2>
-                <button className="bg-primary-600 hover:bg-primary-700 text-white font-semibold px-6 py-2 rounded-lg transition-colors">
+                <button
+                  onClick={handleWriteReview}
+                  className="bg-primary-600 hover:bg-primary-700 text-white font-semibold px-6 py-2 rounded-lg transition-colors"
+                >
                   Write a Review
                 </button>
               </div>
@@ -586,6 +649,14 @@ const ProductDetailPage = () => {
       </main>
 
       <Footer />
+
+      {/* Review Modal */}
+      <ReviewModal
+        isOpen={showReviewModal}
+        onClose={() => setShowReviewModal(false)}
+        product={product}
+        onSubmit={handleReviewSubmit}
+      />
     </div>
   )
 }

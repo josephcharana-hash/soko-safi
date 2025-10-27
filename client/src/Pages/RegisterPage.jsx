@@ -6,7 +6,7 @@ import LoadingSpinner from '../Components/LoadingSpinner'
 
 const RegisterPage = () => {
   const navigate = useNavigate()
-  const { register } = useAuth()
+  const { register, loading: authLoading, error: authError, clearError } = useAuth()
   const [userType, setUserType] = useState('artisan')
   const [formData, setFormData] = useState({
     fullName: '',
@@ -64,6 +64,7 @@ const RegisterPage = () => {
     }
 
     try {
+      clearError(); // Clear any previous auth errors
       const registrationData = {
         full_name: formData.fullName,
         email: formData.email,
@@ -71,15 +72,16 @@ const RegisterPage = () => {
         role: userType
       }
 
-      await register(registrationData)
+      const result = await register(registrationData)
 
+      // Redirect based on user role
       if (userType === 'artisan') {
-        navigate('/artisan-dashboard')
+        navigate('/artisan-dashboard', { replace: true })
       } else {
-        navigate('/buyer-dashboard')
+        navigate('/', { replace: true }) // Redirect buyers to home
       }
     } catch (error) {
-      setErrors({ general: error.message || 'Registration failed. Please try again.' })
+      setErrors({ general: error.message || 'Registration failed. Please check your information and try again.' })
     } finally {
       setIsLoading(false)
     }
@@ -203,9 +205,9 @@ const RegisterPage = () => {
 
           {/* Registration Form */}
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-            {errors.general && (
+            {(errors.general || authError) && (
               <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-700 text-sm font-medium">{errors.general}</p>
+                <p className="text-red-700 text-sm font-medium">{errors.general || authError}</p>
               </div>
             )}
 
@@ -363,10 +365,10 @@ const RegisterPage = () => {
 
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || authLoading}
                 className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
               >
-                {isLoading ? (
+                {(isLoading || authLoading) ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     <span>Creating your account...</span>

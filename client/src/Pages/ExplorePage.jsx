@@ -26,6 +26,8 @@ const ExplorePage = () => {
     const fetchData = async () => {
       try {
         setLoading(true)
+        setError(null)
+        
         const [productsResponse, categoriesResponse] = await Promise.all([
           api.products.getAll(),
           api.categories.getAll()
@@ -33,36 +35,36 @@ const ExplorePage = () => {
 
         const productsArray = Array.isArray(productsResponse) ? productsResponse : []
         setProducts(productsArray)
-        setCategories([
+        
+        // Build categories with product counts
+        const categoryMap = new Map()
+        productsArray.forEach(product => {
+          const category = product.category || 'other'
+          categoryMap.set(category, (categoryMap.get(category) || 0) + 1)
+        })
+        
+        const categoriesWithCounts = [
           { id: 'all', name: 'All Categories', count: productsArray.length },
           ...categoriesResponse.map(cat => ({
             id: cat.id,
             name: cat.name,
-            count: cat.product_count || 0
+            count: categoryMap.get(cat.id) || 0
           }))
-        ])
+        ]
+        
+        setCategories(categoriesWithCounts)
       } catch (error) {
         console.error('Failed to fetch data:', error)
-        setError('Failed to load products')
-        // Fallback data
-        setProducts([
-          {
-            id: 1,
-            title: 'Ceramic Vase',
-            description: 'Handcrafted ceramic vase with a unique glaze.',
-            price: 2500,
-            image: '/images/ceramic-vase.jpg',
-            category: 'ceramics',
-            artisan_name: 'Mary Wanjiku',
-            location: 'Nairobi',
-            rating: 4.8,
-            review_count: 24,
-            in_stock: true
-          }
-        ])
+        setError('Failed to load products. Please try again later.')
+        
+        // Use fallback data from API service
+        const fallbackProducts = await api.products.getAll().catch(() => [])
+        const fallbackCategories = await api.categories.getAll().catch(() => [])
+        
+        setProducts(fallbackProducts)
         setCategories([
-          { id: 'all', name: 'All Categories', count: 1 },
-          { id: 'ceramics', name: 'Ceramics', count: 1 }
+          { id: 'all', name: 'All Categories', count: fallbackProducts.length },
+          ...fallbackCategories.map(cat => ({ ...cat, count: 0 }))
         ])
       } finally {
         setLoading(false)

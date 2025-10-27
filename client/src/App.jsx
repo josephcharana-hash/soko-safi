@@ -1,8 +1,10 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import ErrorBoundary from './Components/ErrorBoundary';
 import LoadingSpinner from './Components/LoadingSpinner';
 import { AuthProvider } from './context/AuthContext';
+import { CartProvider } from './hooks/useCart.jsx';
+import { quickHealthCheck } from './utils/apiTest';
 
 // Lazy load components for better performance
 const Navbar = lazy(() => import('./Components/Layout/Navbar'));
@@ -53,10 +55,20 @@ const ErrorFallback = ({ error, retry }) => (
 );
 
 function App() {
+  // Run API health check in development
+  useEffect(() => {
+    if (import.meta.env.VITE_APP_ENV === 'development') {
+      setTimeout(() => {
+        quickHealthCheck();
+      }, 2000);
+    }
+  }, []);
+
   return (
     <ErrorBoundary fallback={ErrorFallback}>
       <AuthProvider>
-        <Router>
+        <CartProvider>
+          <Router>
           {/* Skip to main content link for accessibility */}
           <a
             href="#main-content"
@@ -161,8 +173,9 @@ function App() {
             </Routes>
           </Suspense>
         </div>
-      </Router>
-    </AuthProvider>
+          </Router>
+        </CartProvider>
+      </AuthProvider>
     </ErrorBoundary>
   );
 }

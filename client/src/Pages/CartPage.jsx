@@ -1,55 +1,45 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Diamond, Trash2, Plus, Minus, ShoppingBag } from 'lucide-react'
+import { Trash2, Plus, Minus, ShoppingBag, Loader } from 'lucide-react'
 import Navbar from '../Components/Layout/Navbar'
 import Footer from '../Components/Layout/Footer'
+import { useCart } from '../hooks/useCart.jsx'
 
 const CartPage = () => {
   const navigate = useNavigate()
-  const [cartItems, setCartItems] = useState([
-    {
-      id: 1,
-      productId: 1,
-      title: 'Ceramic Vase',
-      artisan: 'Sarah Johnson',
-      price: 45.00,
-      quantity: 1,
-      image: 'https://images.unsplash.com/photo-1578500494198-246f612d3b3d?w=100&h=100&fit=crop'
-    },
-    {
-      id: 2,
-      productId: 2,
-      title: 'Wood Carving',
-      artisan: 'John Smith',
-      price: 120.00,
-      quantity: 2,
-      image: 'https://images.unsplash.com/photo-1551522435-a13afa10f103?w=100&h=100&fit=crop'
-    },
-    {
-      id: 3,
-      productId: 3,
-      title: 'Textile Art',
-      artisan: 'Maria Garcia',
-      price: 85.00,
-      quantity: 1,
-      image: 'https://images.unsplash.com/photo-1558769132-cb1aea3c8565?w=100&h=100&fit=crop'
-    }
-  ])
+  const { cartItems, loading, updateQuantity, removeFromCart } = useCart()
+  const [updating, setUpdating] = useState({})
 
-  const updateQuantity = (id, newQuantity) => {
+  const handleUpdateQuantity = async (id, newQuantity) => {
     if (newQuantity < 1) return
-    setCartItems(cartItems.map(item => 
-      item.id === id ? { ...item, quantity: newQuantity } : item
-    ))
+    
+    try {
+      setUpdating(prev => ({ ...prev, [id]: true }))
+      await updateQuantity(id, newQuantity)
+    } catch (error) {
+      alert('Failed to update quantity. Please try again.')
+    } finally {
+      setUpdating(prev => ({ ...prev, [id]: false }))
+    }
   }
 
-  const removeItem = (id) => {
-    setCartItems(cartItems.filter(item => item.id !== id))
+  const handleRemoveItem = async (id) => {
+    try {
+      setUpdating(prev => ({ ...prev, [id]: true }))
+      await removeFromCart(id)
+    } catch (error) {
+      alert('Failed to remove item. Please try again.')
+    } finally {
+      setUpdating(prev => ({ ...prev, [id]: false }))
+    }
   }
 
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-  const shipping = 10.00
-  const tax = subtotal * 0.1
+  const subtotal = cartItems.reduce((sum, item) => {
+    const price = typeof item.price === 'string' ? parseFloat(item.price) : item.price
+    return sum + (price * item.quantity)
+  }, 0)
+  const shipping = 150.00 // KSH 150 shipping
+  const tax = subtotal * 0.16 // 16% VAT in Kenya
   const total = subtotal + shipping + tax
 
   const handleCheckout = () => {
@@ -64,7 +54,12 @@ const CartPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <h1 className="text-3xl font-bold text-gray-900 mb-8">Shopping Cart</h1>
 
-          {cartItems.length === 0 ? (
+          {loading ? (
+            <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
+              <Loader className="w-8 h-8 text-primary mx-auto mb-4 animate-spin" />
+              <p className="text-gray-600">Loading your cart...</p>
+            </div>
+          ) : cartItems.length === 0 ? (
             <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
               <ShoppingBag className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Your cart is empty</h2>
@@ -80,10 +75,10 @@ const CartPage = () => {
                 {cartItems.map((item) => (
                   <div key={item.id} className="bg-white rounded-xl shadow-sm p-6">
                     <div className="flex items-start space-x-4">
-                      <Link to={`/product/${item.productId}`}>
+                      <Link to={`/product/${item.product_id || item.productId}`}>
                         <img 
-                          src={item.image} 
-                          alt={item.title}
+                          src={item.product?.image || item.image || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=100&h=100&fit=crop'} 
+                          alt={item.product?.title || item.title}
                           className="w-24 h-24 rounded-lg object-cover"
                         />
                       </Link>
@@ -91,39 +86,42 @@ const CartPage = () => {
                         <div className="flex items-start justify-between mb-2">
                           <div>
                             <Link 
-                              to={`/product/${item.productId}`}
+                              to={`/product/${item.product_id || item.productId}`}
                               className="text-lg font-bold text-gray-900 hover:text-primary"
                             >
-                              {item.title}
+                              {item.product?.title || item.title}
                             </Link>
-                            <p className="text-sm text-gray-600">by {item.artisan}</p>
+                            <p className="text-sm text-gray-600">by {item.product?.artisan_name || item.artisan || 'Unknown Artisan'}</p>
                           </div>
                           <button
-                            onClick={() => removeItem(item.id)}
-                            className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                            onClick={() => handleRemoveItem(item.id)}
+                            disabled={updating[item.id]}
+                            className="p-2 text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
                           >
-                            <Trash2 className="w-5 h-5" />
+                            {updating[item.id] ? <Loader className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
                           </button>
                         </div>
                         
                         <div className="flex items-center justify-between mt-4">
                           <div className="flex items-center space-x-3">
                             <button
-                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                              className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50"
+                              onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                              disabled={updating[item.id] || item.quantity <= 1}
+                              className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50"
                             >
                               <Minus className="w-4 h-4" />
                             </button>
                             <span className="text-lg font-medium w-8 text-center">{item.quantity}</span>
                             <button
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                              className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50"
+                              onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                              disabled={updating[item.id]}
+                              className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50"
                             >
                               <Plus className="w-4 h-4" />
                             </button>
                           </div>
                           <p className="text-xl font-bold text-gray-900">
-                            KSH {(item.price * item.quantity).toFixed(2)}
+                            KSH {((typeof item.price === 'string' ? parseFloat(item.price) : item.price) * item.quantity).toFixed(2)}
                           </p>
                         </div>
                       </div>

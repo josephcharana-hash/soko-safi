@@ -1,13 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Diamond, Smartphone, Lock, CheckCircle } from 'lucide-react'
+import { Smartphone, Lock, CheckCircle, Loader } from 'lucide-react'
 import Navbar from '../Components/Layout/Navbar'
 import Footer from '../Components/Layout/Footer'
+import { useCart } from '../hooks/useCart.jsx'
 import { api } from '../services/api'
 
 const CheckoutPage = () => {
   const navigate = useNavigate()
+  const { cartItems, loading, clearCart } = useCart()
   const [step, setStep] = useState(1) // 1: Shipping, 2: Payment, 3: Confirmation
+  const [processing, setProcessing] = useState(false)
   const [shippingInfo, setShippingInfo] = useState({
     fullName: '',
     email: '',
@@ -23,27 +26,18 @@ const CheckoutPage = () => {
     paymentMethod: 'mpesa'
   })
 
-  // Mock cart data
-  const cartItems = [
-    {
-      id: 1,
-      title: 'Ceramic Vase',
-      price: 45.00,
-      quantity: 1,
-      image: 'https://images.unsplash.com/photo-1578500494198-246f612d3b3d?w=100&h=100&fit=crop'
-    },
-    {
-      id: 2,
-      title: 'Wood Carving',
-      price: 120.00,
-      quantity: 2,
-      image: 'https://images.unsplash.com/photo-1551522435-a13afa10f103?w=100&h=100&fit=crop'
+  useEffect(() => {
+    if (!loading && (!cartItems || cartItems.length === 0)) {
+      navigate('/cart')
     }
-  ]
+  }, [cartItems, loading, navigate])
 
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-  const shipping = 10.00
-  const tax = subtotal * 0.1
+  const subtotal = cartItems.reduce((sum, item) => {
+    const price = typeof item.price === 'string' ? parseFloat(item.price) : item.price
+    return sum + (price * item.quantity)
+  }, 0)
+  const shipping = 150.00 // KSH 150 shipping
+  const tax = subtotal * 0.16 // 16% VAT in Kenya
   const total = subtotal + shipping + tax
 
   const handleShippingSubmit = (e) => {
@@ -54,13 +48,43 @@ const CheckoutPage = () => {
   const handlePaymentSubmit = async (e) => {
     e.preventDefault()
     
+    if (cartItems.length === 0) {
+      alert('Your cart is empty')
+      return
+    }
+    
     try {
-      // Initiate M-Pesa STK Push
+      setProcessing(true)
+      
+      // Create order
+      const orderData = {
+        total_amount: total,
+        status: 'pending'
+      }
+      
+      const order = await api.orders.create(orderData)
+      const orderId = order.order?.id || order.id
+      
+      // Create order items
+      for (const item of cartItems) {
+        const price = typeof item.price === 'string' ? parseFloat(item.price) : item.price
+        await api.orders.createItem({
+          order_id: orderId,
+          product_id: item.product_id || item.id,
+          quantity: item.quantity,
+          unit_price: price,
+          total_price: price * item.quantity,
+          artisan_id: item.product?.artisan_id || item.artisan_id || 1
+        })
+      }
+      
+      // Clear cart after successful order creation
+      await clearCart()
+      
+      // Initiate M-Pesa payment
       const paymentData = {
-        phone_number: paymentInfo.phoneNumber,
-        amount: Math.round(total * 130), // Convert to KSh
-        account_reference: `ORDER-${Date.now()}`,
-        transaction_desc: 'Soko Safi Purchase'
+        order_id: orderId,
+        phone_number: paymentInfo.phoneNumber
       }
       
       console.log('Initiating M-Pesa payment...', paymentData)
@@ -68,15 +92,14 @@ const CheckoutPage = () => {
       try {
         const response = await api.payments.mpesa.stkPush(paymentData)
         
-        if (response && response.success) {
+        if (response && (response.success || response.message)) {
           alert('Payment request sent to your phone. Please complete the payment.')
           setStep(3)
         } else {
-          throw new Error(response?.message || 'Payment initiation failed')
+          throw new Error(response?.error || 'Payment initiation failed')
         }
       } catch (apiError) {
         console.warn('M-Pesa API not available, simulating payment for demo')
-        // For demo purposes when backend M-Pesa is not available
         alert('Demo mode: Payment request sent to your phone. Please complete the payment.')
         setStep(3)
       }
@@ -84,6 +107,8 @@ const CheckoutPage = () => {
     } catch (error) {
       console.error('Payment failed:', error)
       alert(`Payment failed: ${error.message}. Please try again.`)
+    } finally {
+      setProcessing(false)
     }
   }
 
@@ -107,6 +132,12 @@ const CheckoutPage = () => {
       
       <main className="flex-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          {loading ? (
+            <div className="flex justify-center items-center min-h-[400px]">
+              <Loader className="w-8 h-8 text-primary animate-spin" />
+            </div>
+          ) : (
+            <>
           {/* Progress Steps */}
           <div className="mb-8 md:mb-12">
             <div className="flex items-center justify-center space-x-2 md:space-x-4">
@@ -351,8 +382,19 @@ const CheckoutPage = () => {
                       >
                         Back
                       </button>
-                      <button type="submit" className="btn-primary px-6 py-3">
-                        Pay with M-Pesa
+                      <button 
+                        type="submit" 
+                        disabled={processing}
+                        className="btn-primary px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {processing ? (
+                          <>
+                            <Loader className="w-5 h-5 animate-spin inline mr-2" />
+                            Processing...
+                          </>
+                        ) : (
+                          'Pay with M-Pesa'
+                        )}
                       </button>
                     </div>
                   </form>
@@ -394,20 +436,23 @@ const CheckoutPage = () => {
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Order Summary</h3>
                 
                 <div className="space-y-4 mb-6">
-                  {cartItems.map((item) => (
-                    <div key={item.id} className="flex items-center space-x-3">
-                      <img 
-                        src={item.image} 
-                        alt={item.title}
-                        className="w-16 h-16 rounded-lg object-cover"
-                      />
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900 text-sm">{item.title}</p>
-                        <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+                  {cartItems.map((item) => {
+                    const price = typeof item.price === 'string' ? parseFloat(item.price) : item.price
+                    return (
+                      <div key={item.id} className="flex items-center space-x-3">
+                        <img 
+                          src={item.product?.image || item.image || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=100&h=100&fit=crop'} 
+                          alt={item.product?.title || item.title}
+                          className="w-16 h-16 rounded-lg object-cover"
+                        />
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900 text-sm">{item.product?.title || item.title}</p>
+                          <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+                        </div>
+                        <p className="font-bold text-gray-900">KSH {(price * item.quantity).toFixed(2)}</p>
                       </div>
-                      <p className="font-bold text-gray-900">KSH {(item.price * item.quantity).toFixed(2)}</p>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
 
                 <div className="border-t border-gray-200 pt-4 space-y-2">
@@ -433,6 +478,8 @@ const CheckoutPage = () => {
               </div>
             </div>
           </div>
+            </>
+          )}
         </div>
       </main>
 
