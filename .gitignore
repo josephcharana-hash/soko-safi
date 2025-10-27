@@ -1,1 +1,56 @@
 .marscode
+.env
+venv/
+
+# M-Pesa Configuration
+server/.mpesa_keys
+server/mpesa_*.pem
+server/certificates/
+
+# Database
+server/instance/
+server/*.db
+server/soko_safi.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+server/.pytest_cache/
+server/.coverage
+server/htmlcov/
+server/dist/
+server/build/
+server/*.egg-info/
+server/.venv/
+server/venv/
+server/soko_env/
+
+# Project Documentation
+summary.md
+*.summary.md
+
+# Client
+client/node_modules/
+client/dist/
+client/dist-ssr/
+client/*.local
+client/.vscode/*
+!client/.vscode/extensions.json
+client/.idea
+client/.DS_Store
+client/*.suo
+client/*.ntvs*
+client/*.njsproj
+client/*.sln
+client/*.sw?
+client/logs/
+client/*.log
+client/npm-debug.log*
+client/yarn-debug.log*
+client/yarn-error.log*
+client/pnpm-debug.log*
+client/lerna-debug.log*
+
