@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Diamond, LayoutDashboard, Package, ShoppingBag, MessageSquare, Upload, Bell, User, Plus } from 'lucide-react'
+import { api } from '../services/api'
 
 const ArtisanDashboard = () => {
   const [activeTab, setActiveTab] = useState('products')
@@ -15,22 +16,24 @@ const ArtisanDashboard = () => {
     price: ''
   })
 
-  const [myProducts, setMyProducts] = useState([
-    {
-      id: 1,
-      title: 'Ceramic Vase',
-      price: 45.00,
-      status: 'Active',
-      image: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=100&h=100&fit=crop'
-    },
-    {
-      id: 2,
-      title: 'Wood Carving',
-      price: 120.00,
-      status: 'Active',
-      image: 'https://images.unsplash.com/photo-1595429426858-28f04f7db1f5?w=100&h=100&fit=crop'
+  const [myProducts, setMyProducts] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    loadProducts()
+  }, [])
+
+  const loadProducts = async () => {
+    try {
+      setLoading(true)
+      const products = await api.products.getAll()
+      setMyProducts(products)
+    } catch (error) {
+      console.error('Failed to load products:', error)
+    } finally {
+      setLoading(false)
     }
-  ])
+  }
 
   const handleDrag = (e) => {
     e.preventDefault()
@@ -75,23 +78,47 @@ const ArtisanDashboard = () => {
     })
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     
-    const newProduct = {
-      id: myProducts.length + 1,
-      title: formData.title,
-      price: parseFloat(formData.price),
-      status: 'Active',
-      image: uploadedImage || 'https://via.placeholder.com/100/3b82f6/ffffff?text=Product'
+    try {
+      setLoading(true)
+      const productData = {
+        title: formData.title,
+        description: formData.description,
+        price: parseFloat(formData.price),
+        stock: 10, // Default stock
+        currency: 'USD'
+      }
+      
+      await api.products.create(productData)
+      await loadProducts() // Reload products
+      
+      setShowAddProduct(false)
+      setFormData({ title: '', category: '', subcategory: '', description: '', price: '' })
+      setUploadedImage(null)
+      
+      alert('Product added successfully!')
+    } catch (error) {
+      alert('Failed to add product: ' + error.message)
+    } finally {
+      setLoading(false)
     }
-    
-    setMyProducts([...myProducts, newProduct])
-    setShowAddProduct(false)
-    setFormData({ title: '', category: '', subcategory: '', description: '', price: '' })
-    setUploadedImage(null)
-    
-    alert('Product added successfully!')
+  }
+
+  const handleDelete = async (productId) => {
+    if (confirm('Are you sure you want to delete this product?')) {
+      try {
+        setLoading(true)
+        await api.products.delete(productId)
+        await loadProducts() // Reload products
+        alert('Product deleted successfully!')
+      } catch (error) {
+        alert('Failed to delete product: ' + error.message)
+      } finally {
+        setLoading(false)
+      }
+    }
   }
 
   return (
@@ -262,8 +289,12 @@ const ArtisanDashboard = () => {
                           <button className="btn-secondary text-sm px-4 py-2 flex-1">
                             Edit
                           </button>
-                          <button className="btn-secondary text-sm px-4 py-2 flex-1 text-red-600 hover:bg-red-50">
-                            Delete
+                          <button 
+                            onClick={() => handleDelete(product.id)}
+                            className="btn-secondary text-sm px-4 py-2 flex-1 text-red-600 hover:bg-red-50"
+                            disabled={loading}
+                          >
+                            {loading ? 'Deleting...' : 'Delete'}
                           </button>
                         </div>
                       </div>
