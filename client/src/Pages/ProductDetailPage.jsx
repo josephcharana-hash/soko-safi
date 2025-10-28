@@ -1,78 +1,92 @@
-import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { Diamond, ShoppingCart, Heart, Star, MessageSquare, ArrowLeft, User } from 'lucide-react'
-import Navbar from '../components/Navbar'
-import Footer from '../components/Footer'
+import { useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import {
+  Diamond,
+  ShoppingCart,
+  Heart,
+  Star,
+  MessageSquare,
+  ArrowLeft,
+  User,
+} from "lucide-react";
+import Navbar from "../Components/Layout/Navbar";
+import Footer from "../Components/Layout/Footer";
 
 const ProductDetailPage = () => {
-  const { id } = useParams()
-  const [quantity, setQuantity] = useState(1)
-  const [activeImage, setActiveImage] = useState(0)
+  const { id } = useParams();
+  const [quantity, setQuantity] = useState(1);
+  const [activeImage, setActiveImage] = useState(0);
 
   // Mock product data - replace with API call
   const product = {
     id: id,
-    title: 'Handcrafted Ceramic Vase',
-    price: 45.00,
-    description: 'This beautiful ceramic vase is handcrafted with care using traditional techniques passed down through generations. Each piece is unique with its own character and charm. The glaze is food-safe and the vase is perfect for fresh or dried flowers.',
-    category: 'Ceramics',
-    subcategory: 'Decorative',
+    title: "Handcrafted Ceramic Vase",
+    price: 45.0,
+    description:
+      "This beautiful ceramic vase is handcrafted with care using traditional techniques passed down through generations. Each piece is unique with its own character and charm. The glaze is food-safe and the vase is perfect for fresh or dried flowers.",
+    category: "Ceramics",
+    subcategory: "Decorative",
     images: [
-      'https://images.unsplash.com/photo-1578500494198-246f612d3b3d?w=800&h=800&fit=crop',
-      'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=800&h=800&fit=crop',
-      'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=800&h=800&fit=crop'
+      "https://images.unsplash.com/photo-1578500494198-246f612d3b3d?w=800&h=800&fit=crop",
+      "https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=800&h=800&fit=crop",
+      "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=800&h=800&fit=crop",
     ],
     artisan: {
       id: 1,
-      name: 'Sarah Johnson',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
+      name: "Sarah Johnson",
+      avatar:
+        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
       rating: 4.8,
-      totalReviews: 124
+      totalReviews: 124,
     },
     inStock: true,
     reviews: [
       {
         id: 1,
-        user: 'John Doe',
+        user: "John Doe",
         rating: 5,
-        comment: 'Absolutely beautiful! The craftsmanship is outstanding.',
-        date: '2 weeks ago'
+        comment: "Absolutely beautiful! The craftsmanship is outstanding.",
+        date: "2 weeks ago",
       },
       {
         id: 2,
-        user: 'Jane Smith',
+        user: "Jane Smith",
         rating: 4,
-        comment: 'Great quality, shipping was fast. Very happy with my purchase.',
-        date: '1 month ago'
+        comment:
+          "Great quality, shipping was fast. Very happy with my purchase.",
+        date: "1 month ago",
       },
       {
         id: 3,
-        user: 'Mike Wilson',
+        user: "Mike Wilson",
         rating: 5,
-        comment: 'Perfect gift! The recipient loved it.',
-        date: '1 month ago'
-      }
-    ]
-  }
+        comment: "Perfect gift! The recipient loved it.",
+        date: "1 month ago",
+      },
+    ],
+  };
 
   const handleAddToCart = () => {
-    console.log('Added to cart:', { product, quantity })
+    console.log("Added to cart:", { product, quantity });
     // Add to cart logic
-  }
+  };
 
   const handleBuyNow = () => {
-    console.log('Buy now:', { product, quantity })
+    console.log("Buy now:", { product, quantity });
     // Direct checkout logic
-  }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
-      
+
       <main className="flex-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Back Button */}
-          <Link to="/explore" className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-6">
+          <Link
+            to="/explore"
+            className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-6"
+          >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Explore
           </Link>
@@ -81,8 +95,8 @@ const ProductDetailPage = () => {
             {/* Product Images */}
             <div>
               <div className="bg-white rounded-2xl overflow-hidden shadow-sm mb-4">
-                <img 
-                  src={product.images[activeImage]} 
+                <img
+                  src={product.images[activeImage]}
                   alt={product.title}
                   className="w-full h-[300px] sm:h-[400px] lg:h-[500px] object-cover"
                 />
@@ -93,11 +107,13 @@ const ProductDetailPage = () => {
                     key={index}
                     onClick={() => setActiveImage(index)}
                     className={`rounded-lg overflow-hidden border-2 transition-all ${
-                      activeImage === index ? 'border-primary' : 'border-transparent'
+                      activeImage === index
+                        ? "border-primary"
+                        : "border-transparent"
                     }`}
                   >
-                    <img 
-                      src={image} 
+                    <img
+                      src={image}
                       alt={`${product.title} ${index + 1}`}
                       className="w-full h-24 object-cover"
                     />
@@ -111,7 +127,9 @@ const ProductDetailPage = () => {
               <div className="bg-white rounded-2xl shadow-sm p-8">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <span className="text-sm text-gray-600">{product.category} / {product.subcategory}</span>
+                    <span className="text-sm text-gray-600">
+                      {product.category} / {product.subcategory}
+                    </span>
                     <h1 className="text-3xl font-bold text-gray-900 mt-2">
                       {product.title}
                     </h1>
@@ -124,14 +142,19 @@ const ProductDetailPage = () => {
                 <div className="flex items-center space-x-4 mb-6 pb-6 border-b border-gray-200">
                   <div className="flex items-center">
                     {[...Array(5)].map((_, i) => (
-                      <Star 
-                        key={i} 
-                        className={`w-5 h-5 ${i < Math.floor(product.artisan.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                      <Star
+                        key={i}
+                        className={`w-5 h-5 ${
+                          i < Math.floor(product.artisan.rating)
+                            ? "text-yellow-400 fill-current"
+                            : "text-gray-300"
+                        }`}
                       />
                     ))}
                   </div>
                   <span className="text-gray-600">
-                    {product.artisan.rating} ({product.artisan.totalReviews} reviews)
+                    {product.artisan.rating} ({product.artisan.totalReviews}{" "}
+                    reviews)
                   </span>
                 </div>
 
@@ -139,8 +162,12 @@ const ProductDetailPage = () => {
                   <span className="text-4xl font-bold text-gray-900">
                     ${product.price.toFixed(2)}
                   </span>
-                  <span className={`ml-4 text-sm font-medium ${product.inStock ? 'text-green-600' : 'text-red-600'}`}>
-                    {product.inStock ? 'In Stock' : 'Out of Stock'}
+                  <span
+                    className={`ml-4 text-sm font-medium ${
+                      product.inStock ? "text-green-600" : "text-red-600"
+                    }`}
+                  >
+                    {product.inStock ? "In Stock" : "Out of Stock"}
                   </span>
                 </div>
 
@@ -149,15 +176,20 @@ const ProductDetailPage = () => {
                 </p>
 
                 {/* Artisan Info */}
-                <Link to={`/artisan/${product.artisan.id}`} className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg mb-6 hover:bg-gray-100 transition-colors">
-                  <img 
-                    src={product.artisan.avatar} 
+                <Link
+                  to={`/artisan/${product.artisan.id}`}
+                  className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg mb-6 hover:bg-gray-100 transition-colors"
+                >
+                  <img
+                    src={product.artisan.avatar}
                     alt={product.artisan.name}
                     className="w-12 h-12 rounded-full object-cover"
                   />
                   <div>
                     <p className="text-sm text-gray-600">Artisan</p>
-                    <p className="font-bold text-gray-900">{product.artisan.name}</p>
+                    <p className="font-bold text-gray-900">
+                      {product.artisan.name}
+                    </p>
                   </div>
                 </Link>
 
@@ -173,7 +205,9 @@ const ProductDetailPage = () => {
                     >
                       -
                     </button>
-                    <span className="text-lg font-medium w-12 text-center">{quantity}</span>
+                    <span className="text-lg font-medium w-12 text-center">
+                      {quantity}
+                    </span>
                     <button
                       onClick={() => setQuantity(quantity + 1)}
                       className="w-10 h-10 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50"
@@ -218,27 +252,38 @@ const ProductDetailPage = () => {
               <h2 className="text-2xl font-bold text-gray-900 mb-6">
                 Customer Reviews ({product.reviews.length})
               </h2>
-              
+
               <div className="space-y-6">
                 {product.reviews.map((review) => (
-                  <div key={review.id} className="border-b border-gray-200 pb-6 last:border-0">
+                  <div
+                    key={review.id}
+                    className="border-b border-gray-200 pb-6 last:border-0"
+                  >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
                           <User className="w-5 h-5 text-gray-600" />
                         </div>
                         <div>
-                          <p className="font-bold text-gray-900">{review.user}</p>
+                          <p className="font-bold text-gray-900">
+                            {review.user}
+                          </p>
                           <div className="flex items-center space-x-2">
                             <div className="flex">
                               {[...Array(5)].map((_, i) => (
-                                <Star 
-                                  key={i} 
-                                  className={`w-4 h-4 ${i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                                <Star
+                                  key={i}
+                                  className={`w-4 h-4 ${
+                                    i < review.rating
+                                      ? "text-yellow-400 fill-current"
+                                      : "text-gray-300"
+                                  }`}
                                 />
                               ))}
                             </div>
-                            <span className="text-sm text-gray-500">{review.date}</span>
+                            <span className="text-sm text-gray-500">
+                              {review.date}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -258,7 +303,7 @@ const ProductDetailPage = () => {
 
       <Footer />
     </div>
-  )
-}
+  );
+};
 
-export default ProductDetailPage
+export default ProductDetailPage;
