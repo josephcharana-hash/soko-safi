@@ -5,9 +5,6 @@ export default {
     "./src/**/*.{js,jsx,ts,tsx}",
   ],
   theme: {
-<<<<<<< HEAD
-    extend: {},
-=======
     extend: {
       colors: {
         primary: {
@@ -32,7 +29,6 @@ export default {
         '72': '18rem', // sidebar width
       }
     },
->>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
   },
   plugins: [],
 }

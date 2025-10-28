@@ -1,14 +1,3 @@
-<<<<<<< HEAD
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Diamond, CreditCard, Lock, CheckCircle } from "lucide-react";
-import Navbar from "../Components/Layout/Navbar";
-import Footer from "../Components/Layout/Footer";
-
-const CheckoutPage = () => {
-  const navigate = useNavigate();
-  const [step, setStep] = useState(1); // 1: Shipping, 2: Payment, 3: Confirmation
-=======
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Smartphone, Lock, CheckCircle, Loader } from 'lucide-react'
@@ -22,7 +11,6 @@ const CheckoutPage = () => {
   const { cartItems, loading, clearCart } = useCart()
   const [step, setStep] = useState(1) // 1: Shipping, 2: Payment, 3: Confirmation
   const [processing, setProcessing] = useState(false)
->>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
   const [shippingInfo, setShippingInfo] = useState({
     fullName: "",
     email: "",
@@ -34,42 +22,6 @@ const CheckoutPage = () => {
     country: "",
   });
   const [paymentInfo, setPaymentInfo] = useState({
-<<<<<<< HEAD
-    cardNumber: "",
-    cardName: "",
-    expiryDate: "",
-    cvv: "",
-    paymentMethod: "card", // card or paypal
-  });
-
-  // Mock cart data
-  const cartItems = [
-    {
-      id: 1,
-      title: "Ceramic Vase",
-      price: 45.0,
-      quantity: 1,
-      image:
-        "https://images.unsplash.com/photo-1578500494198-246f612d3b3d?w=100&h=100&fit=crop",
-    },
-    {
-      id: 2,
-      title: "Wood Carving",
-      price: 120.0,
-      quantity: 2,
-      image:
-        "https://images.unsplash.com/photo-1551522435-a13afa10f103?w=100&h=100&fit=crop",
-    },
-  ];
-
-  const subtotal = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
-  const shipping = 10.0;
-  const tax = subtotal * 0.1;
-  const total = subtotal + shipping + tax;
-=======
     phoneNumber: '',
     paymentMethod: 'mpesa'
   })
@@ -87,21 +39,12 @@ const CheckoutPage = () => {
   const shipping = 150.00 // KSH 150 shipping
   const tax = subtotal * 0.16 // 16% VAT in Kenya
   const total = subtotal + shipping + tax
->>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
 
   const handleShippingSubmit = (e) => {
     e.preventDefault();
     setStep(2);
   };
 
-<<<<<<< HEAD
-  const handlePaymentSubmit = (e) => {
-    e.preventDefault();
-    // Process payment
-    console.log("Processing payment...", { shippingInfo, paymentInfo });
-    setStep(3);
-  };
-=======
   const handlePaymentSubmit = async (e) => {
     e.preventDefault()
     
@@ -168,7 +111,6 @@ const CheckoutPage = () => {
       setProcessing(false)
     }
   }
->>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
 
   const handleShippingChange = (e) => {
     setShippingInfo({
@@ -441,125 +383,6 @@ const CheckoutPage = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-3">
                       Payment Method
                     </label>
-<<<<<<< HEAD
-                    <div className="grid grid-cols-2 gap-4">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setPaymentInfo({
-                            ...paymentInfo,
-                            paymentMethod: "card",
-                          })
-                        }
-                        className={`p-4 rounded-lg border-2 transition-all ${
-                          paymentInfo.paymentMethod === "card"
-                            ? "border-primary bg-primary/5"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
-                      >
-                        <CreditCard className="w-6 h-6 mx-auto mb-2" />
-                        <p className="font-medium">Credit Card</p>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setPaymentInfo({
-                            ...paymentInfo,
-                            paymentMethod: "paypal",
-                          })
-                        }
-                        className={`p-4 rounded-lg border-2 transition-all ${
-                          paymentInfo.paymentMethod === "paypal"
-                            ? "border-primary bg-primary/5"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
-                      >
-                        <div className="w-6 h-6 mx-auto mb-2 font-bold text-blue-600">
-                          PP
-                        </div>
-                        <p className="font-medium">PayPal</p>
-                      </button>
-                    </div>
-                  </div>
-
-                  {paymentInfo.paymentMethod === "card" && (
-                    <form onSubmit={handlePaymentSubmit} className="space-y-4">
-                      <div>
-                        <label
-                          htmlFor="cardNumber"
-                          className="block text-sm font-medium text-gray-700 mb-2"
-                        >
-                          Card Number *
-                        </label>
-                        <input
-                          type="text"
-                          id="cardNumber"
-                          name="cardNumber"
-                          value={paymentInfo.cardNumber}
-                          onChange={handlePaymentChange}
-                          placeholder="1234 5678 9012 3456"
-                          className="input-field"
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label
-                          htmlFor="cardName"
-                          className="block text-sm font-medium text-gray-700 mb-2"
-                        >
-                          Cardholder Name *
-                        </label>
-                        <input
-                          type="text"
-                          id="cardName"
-                          name="cardName"
-                          value={paymentInfo.cardName}
-                          onChange={handlePaymentChange}
-                          placeholder="John Doe"
-                          className="input-field"
-                          required
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label
-                            htmlFor="expiryDate"
-                            className="block text-sm font-medium text-gray-700 mb-2"
-                          >
-                            Expiry Date *
-                          </label>
-                          <input
-                            type="text"
-                            id="expiryDate"
-                            name="expiryDate"
-                            value={paymentInfo.expiryDate}
-                            onChange={handlePaymentChange}
-                            placeholder="MM/YY"
-                            className="input-field"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <label
-                            htmlFor="cvv"
-                            className="block text-sm font-medium text-gray-700 mb-2"
-                          >
-                            CVV *
-                          </label>
-                          <input
-                            type="text"
-                            id="cvv"
-                            name="cvv"
-                            value={paymentInfo.cvv}
-                            onChange={handlePaymentChange}
-                            placeholder="123"
-                            className="input-field"
-                            maxLength="4"
-                            required
-                          />
-=======
                     <div className="max-w-md">
                       <div className="p-4 rounded-lg border-2 border-primary bg-primary/5">
                         <div className="flex items-center space-x-3">
@@ -606,7 +429,6 @@ const CheckoutPage = () => {
                             <li>3. Enter your M-Pesa PIN to complete the payment</li>
                             <li>4. You'll receive a confirmation SMS</li>
                           </ol>
->>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
                         </div>
                       </div>
                     </div>
@@ -618,39 +440,7 @@ const CheckoutPage = () => {
                       </p>
                     </div>
 
-<<<<<<< HEAD
-                      <div className="flex justify-between pt-6">
-                        <button
-                          type="button"
-                          onClick={() => setStep(1)}
-                          className="btn-secondary px-6 py-3"
-                        >
-                          Back
-                        </button>
-                        <button type="submit" className="btn-primary px-6 py-3">
-                          Place Order
-                        </button>
-                      </div>
-                    </form>
-                  )}
-
-                  {paymentInfo.paymentMethod === "paypal" && (
-                    <div className="space-y-4">
-                      <div className="p-6 bg-blue-50 rounded-lg text-center">
-                        <p className="text-gray-700 mb-4">
-                          You will be redirected to PayPal to complete your
-                          purchase.
-                        </p>
-                        <button
-                          onClick={handlePaymentSubmit}
-                          className="btn-primary px-8 py-3"
-                        >
-                          Continue with PayPal
-                        </button>
-                      </div>
-=======
                     <div className="flex justify-between pt-6">
->>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
                       <button
                         type="button"
                         onClick={() => setStep(1)}
@@ -724,28 +514,6 @@ const CheckoutPage = () => {
                 </h3>
 
                 <div className="space-y-4 mb-6">
-<<<<<<< HEAD
-                  {cartItems.map((item) => (
-                    <div key={item.id} className="flex items-center space-x-3">
-                      <img
-                        src={item.image}
-                        alt={item.title}
-                        className="w-16 h-16 rounded-lg object-cover"
-                      />
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900 text-sm">
-                          {item.title}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Qty: {item.quantity}
-                        </p>
-                      </div>
-                      <p className="font-bold text-gray-900">
-                        ${(item.price * item.quantity).toFixed(2)}
-                      </p>
-                    </div>
-                  ))}
-=======
                   {cartItems.map((item) => {
                     const price = typeof item.price === 'string' ? parseFloat(item.price) : item.price
                     return (
@@ -763,7 +531,6 @@ const CheckoutPage = () => {
                       </div>
                     )
                   })}
->>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
                 </div>
 
                 <div className="border-t border-gray-200 pt-4 space-y-2">
@@ -781,17 +548,8 @@ const CheckoutPage = () => {
                   </div>
                   <div className="border-t border-gray-200 pt-2 mt-2">
                     <div className="flex justify-between">
-<<<<<<< HEAD
-                      <span className="text-lg font-bold text-gray-900">
-                        Total
-                      </span>
-                      <span className="text-xl font-bold text-gray-900">
-                        ${total.toFixed(2)}
-                      </span>
-=======
                       <span className="text-lg font-bold text-gray-900">Total</span>
                       <span className="text-xl font-bold text-gray-900">KSH {total.toFixed(2)}</span>
->>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
                     </div>
                   </div>
                 </div>

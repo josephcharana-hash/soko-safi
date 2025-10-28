@@ -1,10 +1,5 @@
-<<<<<<< HEAD
 import Navbar from "../Components/Layout/Navbar";
 import Footer from "../Components/Layout/Footer";
-=======
-import Navbar from '../Components/Layout/Navbar'
-import Footer from '../Components/Layout/Footer'
->>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
 
 const AboutPage = () => {
   return (

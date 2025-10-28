@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-<<<<<<< HEAD
-=======
 @layer base {
   body {
     font-family: 'Inter', system-ui, sans-serif;
@@ -313,4 +311,3 @@
     @apply my-4 sm:my-6 lg:my-8;
   }
 }
->>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97

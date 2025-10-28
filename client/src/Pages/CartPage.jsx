@@ -1,66 +1,3 @@
-<<<<<<< HEAD
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Diamond, Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
-import Navbar from "../Components/Layout/Navbar";
-import Footer from "../Components/Layout/Footer";
-
-const CartPage = () => {
-  const navigate = useNavigate();
-  const [cartItems, setCartItems] = useState([
-    {
-      id: 1,
-      productId: 1,
-      title: "Ceramic Vase",
-      artisan: "Sarah Johnson",
-      price: 45.0,
-      quantity: 1,
-      image:
-        "https://images.unsplash.com/photo-1578500494198-246f612d3b3d?w=100&h=100&fit=crop",
-    },
-    {
-      id: 2,
-      productId: 2,
-      title: "Wood Carving",
-      artisan: "John Smith",
-      price: 120.0,
-      quantity: 2,
-      image:
-        "https://images.unsplash.com/photo-1551522435-a13afa10f103?w=100&h=100&fit=crop",
-    },
-    {
-      id: 3,
-      productId: 3,
-      title: "Textile Art",
-      artisan: "Maria Garcia",
-      price: 85.0,
-      quantity: 1,
-      image:
-        "https://images.unsplash.com/photo-1558769132-cb1aea3c8565?w=100&h=100&fit=crop",
-    },
-  ]);
-
-  const updateQuantity = (id, newQuantity) => {
-    if (newQuantity < 1) return;
-    setCartItems(
-      cartItems.map((item) =>
-        item.id === id ? { ...item, quantity: newQuantity } : item
-      )
-    );
-  };
-
-  const removeItem = (id) => {
-    setCartItems(cartItems.filter((item) => item.id !== id));
-  };
-
-  const subtotal = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
-  const shipping = 10.0;
-  const tax = subtotal * 0.1;
-  const total = subtotal + shipping + tax;
-=======
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Trash2, Plus, Minus, ShoppingBag, Loader } from 'lucide-react'
@@ -104,7 +41,6 @@ const CartPage = () => {
   const shipping = 150.00 // KSH 150 shipping
   const tax = subtotal * 0.16 // 16% VAT in Kenya
   const total = subtotal + shipping + tax
->>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
 
   const handleCheckout = () => {
     navigate("/checkout");
@@ -151,41 +87,23 @@ const CartPage = () => {
                     className="bg-white rounded-xl shadow-sm p-6"
                   >
                     <div className="flex items-start space-x-4">
-<<<<<<< HEAD
-                      <Link to={`/product/${item.productId}`}>
-                        <img
-                          src={item.image}
-                          alt={item.title}
-=======
                       <Link to={`/product/${item.product_id || item.productId}`}>
                         <img 
                           src={item.product?.image || item.image || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=100&h=100&fit=crop'} 
                           alt={item.product?.title || item.title}
->>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
                           className="w-24 h-24 rounded-lg object-cover"
                         />
                       </Link>
                       <div className="flex-1">
                         <div className="flex items-start justify-between mb-2">
                           <div>
-<<<<<<< HEAD
-                            <Link
-                              to={`/product/${item.productId}`}
-=======
                             <Link 
                               to={`/product/${item.product_id || item.productId}`}
->>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
                               className="text-lg font-bold text-gray-900 hover:text-primary"
                             >
                               {item.product?.title || item.title}
                             </Link>
-<<<<<<< HEAD
-                            <p className="text-sm text-gray-600">
-                              by {item.artisan}
-                            </p>
-=======
                             <p className="text-sm text-gray-600">by {item.product?.artisan_name || item.artisan || 'Unknown Artisan'}</p>
->>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
                           </div>
                           <button
                             onClick={() => handleRemoveItem(item.id)}
@@ -199,16 +117,9 @@ const CartPage = () => {
                         <div className="flex items-center justify-between mt-4">
                           <div className="flex items-center space-x-3">
                             <button
-<<<<<<< HEAD
-                              onClick={() =>
-                                updateQuantity(item.id, item.quantity - 1)
-                              }
-                              className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50"
-=======
                               onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
                               disabled={updating[item.id] || item.quantity <= 1}
                               className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50"
->>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
                             >
                               <Minus className="w-4 h-4" />
                             </button>
@@ -216,16 +127,9 @@ const CartPage = () => {
                               {item.quantity}
                             </span>
                             <button
-<<<<<<< HEAD
-                              onClick={() =>
-                                updateQuantity(item.id, item.quantity + 1)
-                              }
-                              className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50"
-=======
                               onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
                               disabled={updating[item.id]}
                               className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50"
->>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
                             >
                               <Plus className="w-4 h-4" />
                             </button>
@@ -250,23 +154,11 @@ const CartPage = () => {
                   <div className="space-y-3 mb-6">
                     <div className="flex items-center justify-between text-gray-700">
                       <span>Subtotal ({cartItems.length} items)</span>
-<<<<<<< HEAD
-                      <span className="font-medium">
-                        ${subtotal.toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-gray-700">
-                      <span>Shipping</span>
-                      <span className="font-medium">
-                        ${shipping.toFixed(2)}
-                      </span>
-=======
                       <span className="font-medium">KSH {subtotal.toFixed(2)}</span>
                     </div>
                     <div className="flex items-center justify-between text-gray-700">
                       <span>Shipping</span>
                       <span className="font-medium">KSH {shipping.toFixed(2)}</span>
->>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
                     </div>
                     <div className="flex items-center justify-between text-gray-700">
                       <span>Tax</span>
@@ -274,17 +166,8 @@ const CartPage = () => {
                     </div>
                     <div className="border-t border-gray-200 pt-3 mt-3">
                       <div className="flex items-center justify-between">
-<<<<<<< HEAD
-                        <span className="text-lg font-bold text-gray-900">
-                          Total
-                        </span>
-                        <span className="text-2xl font-bold text-gray-900">
-                          ${total.toFixed(2)}
-                        </span>
-=======
                         <span className="text-lg font-bold text-gray-900">Total</span>
                         <span className="text-2xl font-bold text-gray-900">KSH {total.toFixed(2)}</span>
->>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
                       </div>
                     </div>
                   </div>
