@@ -1,0 +1,791 @@
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
+import { Diamond, LayoutDashboard, ShoppingBag, MessageSquare, Heart, Star, User, Bell, Package, CreditCard, Plus } from 'lucide-react'
+import ReviewModal from '../Components/ReviewModal'
+import { api } from '../services/api'
+
+const BuyerDashboard = () => {
+  const [activeTab, setActiveTab] = useState('dashboard')
+  const [reviewModal, setReviewModal] = useState({ isOpen: false, product: null })
+
+  // State for API data
+  const [orders, setOrders] = useState([])
+  const [messages, setMessages] = useState([])
+  const [collections, setCollections] = useState([])
+  const [payments, setPayments] = useState([])
+  const [dashboardStats, setDashboardStats] = useState({
+    total_orders: 0,
+    total_collections: 0,
+    total_messages: 0,
+    total_spent: 0
+  })
+
+  // Loading and error states
+  const [loading, setLoading] = useState(false)
+  const [dashboardLoading, setDashboardLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  // Load dashboard data on component mount
+  useEffect(() => {
+    loadDashboardData()
+  }, [])
+
+  const loadDashboardData = async () => {
+    try {
+      setDashboardLoading(true)
+      setError(null)
+
+      // Load all dashboard data in parallel
+      const [ordersData, messagesData, collectionsData, paymentsData] = await Promise.all([
+        api.orders.getAll(),
+        api.messages.getConversations(),
+        api.favorites.getAll(),
+        api.payments.getAll()
+      ])
+
+      setOrders(ordersData || [])
+      setMessages(messagesData || [])
+      setCollections(collectionsData || [])
+      setPayments(paymentsData || [])
+
+      // Calculate dashboard stats
+      const completedPayments = (paymentsData || []).filter(p => p.status === 'completed')
+      const totalSpent = completedPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0)
+      
+      setDashboardStats({
+        total_orders: (ordersData || []).length,
+        total_collections: (collectionsData || []).length,
+        total_messages: (messagesData || []).length,
+        total_spent: totalSpent
+      })
+
+    } catch (error) {
+      console.error('Failed to load dashboard data:', error)
+      setError('Failed to load dashboard data. Please try again.')
+    } finally {
+      setDashboardLoading(false)
+    }
+  }
+
+  const loadOrders = async () => {
+    try {
+      setLoading(true)
+      const ordersData = await api.orders.getAll()
+      setOrders(ordersData || [])
+    } catch (error) {
+      console.error('Failed to load orders:', error)
+      setError('Failed to load orders. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadMessages = async () => {
+    try {
+      setLoading(true)
+      const messagesData = await api.messages.getConversations()
+      setMessages(messagesData || [])
+    } catch (error) {
+      console.error('Failed to load messages:', error)
+      setError('Failed to load messages. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadCollections = async () => {
+    try {
+      setLoading(true)
+      const collectionsData = await api.favorites.getAll()
+      setCollections(collectionsData || [])
+    } catch (error) {
+      console.error('Failed to load collections:', error)
+      setError('Failed to load collections. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadPayments = async () => {
+    try {
+      setLoading(true)
+      const paymentsData = await api.payments.getAll()
+      setPayments(paymentsData || [])
+    } catch (error) {
+      console.error('Failed to load payments:', error)
+      setError('Failed to load payments. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Delivered':
+      case 'Completed':
+        return 'bg-green-100 text-green-800'
+      case 'In Transit':
+        return 'bg-blue-100 text-blue-800'
+      case 'Processing':
+      case 'Pending':
+        return 'bg-yellow-100 text-yellow-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  // Ensure Unsplash images include formatting params and provide a network-safe fallback.
+  const ensureUnsplashFormat = (url) => {
+    if (!url) return url
+    try {
+      // If the hostname is images.unsplash.com and there is no auto=format param, append common params.
+      const parsed = new URL(url)
+      if (parsed.hostname.includes('images.unsplash.com')) {
+        // If the URL already contains auto= or q= assume it's formatted
+        if (!/auto=|q=/.test(parsed.search)) {
+          const sep = parsed.search ? '&' : '?'
+          return `${url}${sep}auto=format&fit=crop&q=80`
+        }
+      }
+    } catch (e) {
+      // ignore and return original
+    }
+    return url
+  }
+
+  const fallbackImage = (w = 200, h = 200) => `https://picsum.photos/${w}/${h}?random=${Math.floor(Math.random() * 10000)}`
+
+  const safeSrc = (url, w = 200, h = 200) => {
+    const formatted = ensureUnsplashFormat(url)
+    return formatted || fallbackImage(w, h)
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Top Navigation */}
+      <nav className="bg-white shadow-lg border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <Link to="/" className="flex items-center space-x-3 group">
+              <div className="p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl group-hover:scale-110 transition-transform duration-200">
+                <Diamond className="w-6 h-6 text-white" fill="currentColor" />
+              </div>
+              <span className="text-xl font-bold text-gray-900 group-hover:text-primary-600 transition-colors">SokoDigital</span>
+            </Link>
+
+            <div className="flex items-center space-x-4">
+              <button className="p-3 text-gray-600 hover:text-primary-600 rounded-xl hover:bg-primary-50 transition-all duration-200 hover:scale-110">
+                <Bell className="w-5 h-5" />
+              </button>
+              <button className="flex items-center space-x-3 p-2 text-gray-600 hover:text-primary-600 rounded-xl hover:bg-primary-50 transition-all duration-200 hover:scale-105">
+                <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center shadow-lg">
+                  <User className="w-5 h-5 text-white" />
+                </div>
+                <span className="font-semibold hidden sm:block">Buyer</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <div className="flex flex-col lg:flex-row">
+        {/* Sidebar */}
+        <aside className="w-full lg:w-80 bg-gradient-to-b from-white to-gray-50 border-b lg:border-b-0 lg:border-r border-gray-200 shadow-lg">
+          <div className="p-6">
+            <div className="flex items-center space-x-3 mb-8">
+              <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Diamond className="w-7 h-7 text-white" fill="currentColor" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Buyer Hub</h2>
+                <p className="text-sm text-gray-500">Manage your purchases</p>
+              </div>
+            </div>
+            <nav className="space-y-3">
+              <button
+                onClick={() => setActiveTab('dashboard')}
+                className={`w-full flex items-center space-x-4 px-5 py-4 rounded-xl transition-all duration-200 whitespace-nowrap group ${
+                  activeTab === 'dashboard'
+                    ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg transform scale-[1.02]'
+                    : 'text-gray-700 hover:bg-white hover:shadow-md hover:transform hover:scale-[1.01]'
+                }`}
+              >
+                <LayoutDashboard className={`w-6 h-6 transition-colors ${
+                  activeTab === 'dashboard' ? 'text-white' : 'text-primary-600 group-hover:text-primary-700'
+                }`} />
+                <span className="font-semibold text-lg">Dashboard</span>
+              </button>
+
+              <button
+                onClick={() => { setActiveTab('orders'); loadOrders(); }}
+                className={`w-full flex items-center space-x-4 px-5 py-4 rounded-xl transition-all duration-200 whitespace-nowrap group ${
+                  activeTab === 'orders'
+                    ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg transform scale-[1.02]'
+                    : 'text-gray-700 hover:bg-white hover:shadow-md hover:transform hover:scale-[1.01]'
+                }`}
+              >
+                <ShoppingBag className={`w-6 h-6 transition-colors ${
+                  activeTab === 'orders' ? 'text-white' : 'text-primary-600 group-hover:text-primary-700'
+                }`} />
+                <span className="font-semibold text-lg">My Orders</span>
+              </button>
+
+              <button
+                onClick={() => { setActiveTab('messages'); loadMessages(); }}
+                className={`w-full flex items-center space-x-4 px-5 py-4 rounded-xl transition-all duration-200 whitespace-nowrap group ${
+                  activeTab === 'messages'
+                    ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg transform scale-[1.02]'
+                    : 'text-gray-700 hover:bg-white hover:shadow-md hover:transform hover:scale-[1.01]'
+                }`}
+              >
+                <MessageSquare className={`w-6 h-6 transition-colors ${
+                  activeTab === 'messages' ? 'text-white' : 'text-primary-600 group-hover:text-primary-700'
+                }`} />
+                <span className="font-semibold text-lg">Messages</span>
+              </button>
+
+              <button
+                onClick={() => { setActiveTab('collections'); loadCollections(); }}
+                className={`w-full flex items-center space-x-4 px-5 py-4 rounded-xl transition-all duration-200 whitespace-nowrap group ${
+                  activeTab === 'collections'
+                    ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg transform scale-[1.02]'
+                    : 'text-gray-700 hover:bg-white hover:shadow-md hover:transform hover:scale-[1.01]'
+                }`}
+              >
+                <Heart className={`w-6 h-6 transition-colors ${
+                  activeTab === 'collections' ? 'text-white' : 'text-primary-600 group-hover:text-primary-700'
+                }`} />
+                <span className="font-semibold text-lg">Collections</span>
+              </button>
+
+              <button
+                onClick={() => { setActiveTab('payments'); loadPayments(); }}
+                className={`w-full flex items-center space-x-4 px-5 py-4 rounded-xl transition-all duration-200 whitespace-nowrap group ${
+                  activeTab === 'payments'
+                    ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg transform scale-[1.02]'
+                    : 'text-gray-700 hover:bg-white hover:shadow-md hover:transform hover:scale-[1.01]'
+                }`}
+              >
+                <CreditCard className={`w-6 h-6 transition-colors ${
+                  activeTab === 'payments' ? 'text-white' : 'text-primary-600 group-hover:text-primary-700'
+                }`} />
+                <span className="font-semibold text-lg">Payment History</span>
+              </button>
+            </nav>
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 animate-fade-in">
+          <div className="max-w-7xl mx-auto">
+            {/* Dashboard Overview */}
+            {activeTab === 'dashboard' && (
+              <>
+                <div className="mb-8">
+                  <h1 className="text-4xl font-bold text-gray-900 mb-2">Dashboard Overview</h1>
+                  <p className="text-gray-600">Welcome back! Here's your shopping activity at a glance.</p>
+                </div>
+
+                {dashboardLoading ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 mb-12">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="bg-gray-100 p-8 rounded-2xl border border-gray-200 animate-pulse">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="w-12 h-12 bg-gray-300 rounded-xl"></div>
+                          <div className="text-right">
+                            <div className="w-16 h-6 bg-gray-300 rounded mb-2"></div>
+                            <div className="w-12 h-8 bg-gray-300 rounded"></div>
+                          </div>
+                        </div>
+                        <div className="w-20 h-4 bg-gray-300 rounded"></div>
+                      </div>
+                    ))}
+                  </div>
+                ) : error ? (
+                  <div className="bg-red-50 border border-red-200 rounded-2xl p-8 mb-12">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                        <span className="text-red-600 font-bold">!</span>
+                      </div>
+                      <div>
+                        <h3 className="text-red-800 font-semibold">Error Loading Dashboard</h3>
+                        <p className="text-red-600 text-sm">{error}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={loadDashboardData}
+                      className="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                      Try Again
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 mb-12">
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-8 rounded-2xl border border-blue-200 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="p-3 bg-blue-500 rounded-xl">
+                          <ShoppingBag className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-medium text-blue-600">Total Orders</p>
+                          <p className="text-3xl font-bold text-blue-900">{dashboardStats.total_orders}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center text-sm text-blue-700">
+                        <span className="font-medium">+5%</span>
+                        <span className="ml-1">from last month</span>
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 p-8 rounded-2xl border border-green-200 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="p-3 bg-green-500 rounded-xl">
+                          <Heart className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-medium text-green-600">Collections</p>
+                          <p className="text-3xl font-bold text-green-900">{dashboardStats.total_collections}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center text-sm text-green-700">
+                        <span className="font-medium">+12%</span>
+                        <span className="ml-1">from last month</span>
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-8 rounded-2xl border border-purple-200 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="p-3 bg-purple-500 rounded-xl">
+                          <MessageSquare className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-medium text-purple-600">Messages</p>
+                          <p className="text-3xl font-bold text-purple-900">{dashboardStats.total_messages}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center text-sm text-purple-700">
+                        <span className="font-medium">+8%</span>
+                        <span className="ml-1">from last month</span>
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-8 rounded-2xl border border-orange-200 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="p-3 bg-orange-500 rounded-xl">
+                          <span className="text-white font-bold text-lg">KSH</span>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-medium text-orange-600">Total Spent</p>
+                          <p className="text-3xl font-bold text-orange-900">{dashboardStats.total_spent.toLocaleString()}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center text-sm text-orange-700">
+                        <span className="font-medium">+15%</span>
+                        <span className="ml-1">from last month</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Recent Activity Section */}
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Recent Activity</h2>
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl">
+                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <ShoppingBag className="w-5 h-5 text-green-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900">Order completed</p>
+                        <p className="text-sm text-gray-600">Ceramic vase delivery confirmed</p>
+                      </div>
+                      <span className="text-sm text-gray-500">2 hours ago</span>
+                    </div>
+                    <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <MessageSquare className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900">New message</p>
+                        <p className="text-sm text-gray-600">Sarah Johnson replied to your inquiry</p>
+                      </div>
+                      <span className="text-sm text-gray-500">5 hours ago</span>
+                    </div>
+                    <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl">
+                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                        <Heart className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900">Added to favorites</p>
+                        <p className="text-sm text-gray-600">Wooden bowl added to your collection</p>
+                      </div>
+                      <span className="text-sm text-gray-500">1 day ago</span>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Orders Tab */}
+            {activeTab === 'orders' && (
+              <>
+                <div className="mb-8">
+                  <h1 className="text-4xl font-bold text-gray-900 mb-2">My Orders</h1>
+                  <p className="text-gray-600">Track your purchases and manage your order history.</p>
+                </div>
+
+                {loading ? (
+                  <div className="space-y-6">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 animate-pulse">
+                        <div className="flex items-start justify-between mb-6">
+                          <div className="w-20 h-20 bg-gray-200 rounded-xl"></div>
+                          <div className="flex-1 ml-6">
+                            <div className="w-48 h-6 bg-gray-200 rounded mb-2"></div>
+                            <div className="w-32 h-4 bg-gray-200 rounded mb-1"></div>
+                            <div className="w-40 h-4 bg-gray-200 rounded"></div>
+                          </div>
+                          <div className="text-right">
+                            <div className="w-24 h-8 bg-gray-200 rounded mb-2"></div>
+                            <div className="w-20 h-6 bg-gray-200 rounded"></div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-3 pt-4 border-t border-gray-100">
+                          <div className="w-24 h-8 bg-gray-200 rounded"></div>
+                          <div className="w-28 h-8 bg-gray-200 rounded"></div>
+                          <div className="w-32 h-8 bg-gray-200 rounded"></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : orders.length === 0 ? (
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-16 text-center rounded-2xl border-2 border-dashed border-gray-300">
+                    <div className="w-20 h-20 bg-gradient-to-br from-primary-100 to-primary-200 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <ShoppingBag className="w-10 h-10 text-primary-600" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3">No orders yet</h3>
+                    <p className="text-gray-600 mb-8 max-w-md mx-auto">Start your shopping journey by exploring beautiful handmade crafts from talented artisans.</p>
+                    <Link
+                      to="/explore"
+                      className="bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold px-8 py-4 rounded-xl inline-flex items-center space-x-3 hover:from-primary-600 hover:to-primary-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                    >
+                      <span>Explore Products</span>
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {orders.map((order) => (
+                      <div key={order.id} className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                        <div className="p-8">
+                          <div className="flex items-start justify-between mb-6">
+                            <div className="flex items-start space-x-6">
+                              <div className="relative">
+                                <img
+                                  src={safeSrc(order.image || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=200&h=200&fit=crop')}
+                                  alt={order.title || order.product}
+                                  className="w-24 h-24 rounded-xl object-cover shadow-md"
+                                />
+                                <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                                  <div className="w-2 h-2 bg-white rounded-full"></div>
+                                </div>
+                              </div>
+                              <div className="flex-1">
+                                <h3 className="font-bold text-gray-900 text-xl mb-2">{order.title || order.product}</h3>
+                                <p className="text-gray-600 mb-1">by {order.artisan_name || order.artisan}</p>
+                                <p className="text-sm text-gray-500">Order #{order.id} • {order.created_at ? new Date(order.created_at).toLocaleDateString() : order.date}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-3xl font-bold text-primary-600 mb-3">KSH {(order.total_amount || order.price).toLocaleString()}</p>
+                              <span className={`px-4 py-2 text-sm font-semibold rounded-full border ${
+                                (order.status || '').toLowerCase() === 'completed' || (order.status || '').toLowerCase() === 'delivered'
+                                  ? 'bg-gradient-to-r from-green-100 to-green-200 text-green-800 border-green-300'
+                                  : (order.status || '').toLowerCase() === 'in transit' || (order.status || '').toLowerCase() === 'processing'
+                                  ? 'bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border-blue-300'
+                                  : 'bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border-yellow-300'
+                              }`}>
+                                {order.status || 'Processing'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-4 pt-6 border-t border-gray-100">
+                            <Link to={`/product/${order.product_id || order.id.replace('#', '')}`} className="flex-1 bg-gray-100 text-gray-700 font-semibold py-3 px-4 rounded-xl hover:bg-gray-200 transition-all duration-200 transform hover:scale-105 flex items-center justify-center space-x-2">
+                              <span>View Product</span>
+                            </Link>
+                            {(order.status || '').toLowerCase() === 'completed' || (order.status || '').toLowerCase() === 'delivered' ? (
+                              <button
+                                onClick={() => setReviewModal({ isOpen: true, product: order })}
+                                className="flex-1 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold py-3 px-4 rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all duration-200 transform hover:scale-105 flex items-center justify-center space-x-2"
+                              >
+                                <Star className="w-4 h-4" />
+                                <span>Write Review</span>
+                              </button>
+                            ) : null}
+                            <Link to={`/messages/${order.artisan_id}`} className="flex-1 bg-blue-50 text-blue-600 font-semibold py-3 px-4 rounded-xl hover:bg-blue-100 transition-all duration-200 transform hover:scale-105 flex items-center justify-center space-x-2">
+                              <MessageSquare className="w-4 h-4" />
+                              <span>Message Artisan</span>
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Messages Tab */}
+            {activeTab === 'messages' && (
+              <>
+                <div className="mb-8">
+                  <h1 className="text-4xl font-bold text-gray-900 mb-2">Messages</h1>
+                  <p className="text-gray-600">Communicate with artisans about your orders and inquiries.</p>
+                </div>
+
+                {loading ? (
+                  <div className="space-y-6">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 animate-pulse">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+                          <div className="flex-1 ml-4">
+                            <div className="w-32 h-6 bg-gray-200 rounded mb-2"></div>
+                            <div className="w-48 h-4 bg-gray-200 rounded"></div>
+                          </div>
+                          <div className="text-right">
+                            <div className="w-16 h-4 bg-gray-200 rounded"></div>
+                          </div>
+                        </div>
+                        <div className="w-full h-12 bg-gray-200 rounded-xl"></div>
+                      </div>
+                    ))}
+                  </div>
+                ) : messages.length === 0 ? (
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-16 text-center rounded-2xl border-2 border-dashed border-gray-300">
+                    <div className="w-20 h-20 bg-gradient-to-br from-primary-100 to-primary-200 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <MessageSquare className="w-10 h-10 text-primary-600" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3">No messages yet</h3>
+                    <p className="text-gray-600 mb-8 max-w-md mx-auto">When you contact artisans or they respond to your inquiries, messages will appear here.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {messages.map((message) => (
+                      <div key={message.id} className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center space-x-4">
+                            <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center">
+                              <User className="w-6 h-6 text-blue-600" />
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-1">
+                                <h3 className="text-xl font-bold text-gray-900">{message.sender_name || message.artisan}</h3>
+                                {message.is_read === false && (
+                                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                )}
+                              </div>
+                              <p className="text-gray-600">{message.sender_email || 'Artisan'}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                              {message.timestamp ? new Date(message.timestamp).toLocaleDateString() : message.time}
+                            </span>
+                          </div>
+                        </div>
+                        <p className={`p-4 rounded-xl border-l-4 ${
+                          message.is_read === false
+                            ? 'text-gray-700 bg-blue-50 border-blue-500'
+                            : 'text-gray-700 bg-gray-50 border-gray-300'
+                        }`}>
+                          {message.message || message.lastMessage}
+                        </p>
+                        <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
+                          <div className="flex space-x-3">
+                            <Link
+                              to={`/messages/${message.sender_id}`}
+                              className="bg-blue-50 text-blue-600 font-semibold px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors"
+                            >
+                              Reply
+                            </Link>
+                            {message.is_read === false && (
+                              <button className="bg-gray-50 text-gray-600 font-semibold px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors">
+                                Mark as Read
+                              </button>
+                            )}
+                          </div>
+                          <span className={`text-sm ${message.is_read === false ? 'text-blue-600 font-semibold' : 'text-gray-500'}`}>
+                            {message.is_read === false ? 'New message' : 'Read'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Collections Tab */}
+            {activeTab === 'collections' && (
+              <>
+                <div className="flex items-center justify-between mb-8">
+                  <h1 className="text-4xl font-bold text-gray-900">My Collections</h1>
+                  <button className="bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold px-6 py-3 rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center space-x-2">
+                    <Plus className="w-5 h-5" />
+                    <span>Create Collection</span>
+                  </button>
+                </div>
+
+                {loading ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden animate-pulse">
+                        <div className="aspect-square bg-gray-200"></div>
+                        <div className="p-6">
+                          <div className="w-32 h-6 bg-gray-200 rounded mb-2"></div>
+                          <div className="w-20 h-4 bg-gray-200 rounded"></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : collections.length === 0 ? (
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-16 text-center rounded-2xl border-2 border-dashed border-gray-300">
+                    <div className="w-20 h-20 bg-gradient-to-br from-primary-100 to-primary-200 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <Heart className="w-10 h-10 text-primary-600" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3">No collections yet</h3>
+                    <p className="text-gray-600 mb-8 max-w-md mx-auto">Create collections to organize your favorite handmade crafts and keep track of items you're interested in.</p>
+                    <button className="bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold px-8 py-4 rounded-xl inline-flex items-center space-x-3 hover:from-primary-600 hover:to-primary-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
+                      <Plus className="w-6 h-6" />
+                      <span>Create Your First Collection</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+                    {collections.map((collection) => (
+                      <Link
+                        key={collection.id}
+                        to={`/collection/${collection.id}`}
+                        className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden group cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2"
+                      >
+                        <div className="aspect-square overflow-hidden">
+                          <img
+                            src={safeSrc(collection.image || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop', 400, 400)}
+                            alt={collection.name}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        </div>
+                        <div className="p-6">
+                          <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors">
+                            {collection.name}
+                          </h3>
+                          <p className="text-gray-600 flex items-center space-x-2">
+                            <Heart className="w-4 h-4 text-red-500" />
+                            <span>{collection.itemCount || 0} items</span>
+                          </p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Payment History Tab */}
+            {activeTab === 'payments' && (
+              <>
+                <div className="mb-8">
+                  <h1 className="text-4xl font-bold text-gray-900 mb-2">Payment History</h1>
+                  <p className="text-gray-600">View all your payment transactions and receipts.</p>
+                </div>
+
+                {loading ? (
+                  <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden animate-pulse">
+                    <div className="p-6 border-b border-gray-200">
+                      <div className="grid grid-cols-5 gap-4">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <div key={i} className="w-full h-6 bg-gray-200 rounded"></div>
+                        ))}
+                      </div>
+                    </div>
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="p-6 border-b border-gray-100 last:border-0">
+                        <div className="grid grid-cols-5 gap-4">
+                          {[1, 2, 3, 4, 5].map((j) => (
+                            <div key={j} className="w-full h-4 bg-gray-200 rounded"></div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : payments.length === 0 ? (
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-16 text-center rounded-2xl border-2 border-dashed border-gray-300">
+                    <div className="w-20 h-20 bg-gradient-to-br from-primary-100 to-primary-200 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <CreditCard className="w-10 h-10 text-primary-600" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3">No payment history</h3>
+                    <p className="text-gray-600 mb-8 max-w-md mx-auto">Your completed payment transactions will appear here once you make purchases.</p>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                          <tr>
+                            <th className="px-8 py-6 text-left text-sm font-bold text-gray-900">Order ID</th>
+                            <th className="px-8 py-6 text-left text-sm font-bold text-gray-900">Date</th>
+                            <th className="px-8 py-6 text-left text-sm font-bold text-gray-900">Method</th>
+                            <th className="px-8 py-6 text-left text-sm font-bold text-gray-900">Amount</th>
+                            <th className="px-8 py-6 text-left text-sm font-bold text-gray-900">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {payments.map((payment) => (
+                            <tr key={payment.id} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-8 py-6 text-sm font-semibold text-gray-900">
+                                #{payment.order_id || payment.orderId}
+                              </td>
+                              <td className="px-8 py-6 text-sm text-gray-600">
+                                {payment.created_at ? new Date(payment.created_at).toLocaleDateString() : payment.date}
+                              </td>
+                              <td className="px-8 py-6 text-sm text-gray-600">
+                                <div className="flex items-center space-x-2">
+                                  <CreditCard className="w-4 h-4 text-gray-400" />
+                                  <span>{payment.method || 'M-Pesa'}</span>
+                                </div>
+                              </td>
+                              <td className="px-8 py-6 text-sm font-bold text-primary-600">
+                                KSH {(payment.amount || 0).toLocaleString()}
+                              </td>
+                              <td className="px-8 py-6">
+                                <span className={`px-4 py-2 text-xs font-semibold rounded-full border ${
+                                  (payment.status || '').toLowerCase() === 'completed'
+                                    ? 'bg-gradient-to-r from-green-100 to-green-200 text-green-800 border-green-300'
+                                    : (payment.status || '').toLowerCase() === 'pending'
+                                    ? 'bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border-yellow-300'
+                                    : 'bg-gradient-to-r from-red-100 to-red-200 text-red-800 border-red-300'
+                                }`}>
+                                  {payment.status || 'Completed'}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </main>
+      </div>
+      
+      <ReviewModal
+        isOpen={reviewModal.isOpen}
+        onClose={() => setReviewModal({ isOpen: false, product: null })}
+        product={reviewModal.product}
+      />
+    </div>
+  )
+}
+
+export default BuyerDashboard

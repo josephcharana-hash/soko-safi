@@ -15,21 +15,40 @@ payment_api = Api(payment_bp)
 class PaymentListResource(Resource):
     @require_auth
     def get(self):
-        """Get all payments - Admin only"""
+        """Get payments - Admin gets all, users get their own payments"""
         from flask import session
-        if session.get('user_role') != 'admin':
-            return {'error': 'Admin access required'}, 403
-        
-        payments = Payment.query.filter_by(deleted_at=None).all()
-        return [{
-            'id': p.id,
-            'order_id': p.order_id,
-            'amount': float(p.amount) if p.amount else 0,
-            'status': p.status.value if p.status else None,
-            'method': p.method.value if p.method else None,
-            'mpesa_transaction_id': p.mpesa_transaction_id,
-            'created_at': p.created_at.isoformat() if p.created_at else None
-        } for p in payments]
+        from app.models import Order
+
+        current_user_id = session.get('user_id')
+        user_role = session.get('user_role')
+
+        if user_role == 'admin':
+            # Admin gets all payments
+            payments = Payment.query.filter_by(deleted_at=None).all()
+        else:
+            # Regular users get payments for their orders
+            user_order_ids = [o.id for o in Order.query.filter_by(user_id=current_user_id).all()]
+            payments = Payment.query.filter(Payment.order_id.in_(user_order_ids), Payment.deleted_at.is_(None)).all()
+
+        # Enhance payments with order details
+        enhanced_payments = []
+        for payment in payments:
+            order = Order.query.get(payment.order_id) if payment.order_id else None
+
+            enhanced_payment = {
+                'id': payment.id,
+                'order_id': payment.order_id,
+                'amount': float(payment.amount) if payment.amount else 0,
+                'status': payment.status.value if payment.status else 'pending',
+                'method': payment.method.value if payment.method else 'mpesa',
+                'mpesa_transaction_id': payment.mpesa_transaction_id,
+                'created_at': payment.created_at.isoformat() if payment.created_at else None,
+                'updated_at': payment.updated_at.isoformat() if payment.updated_at else None,
+                'order_date': order.created_at.isoformat() if order and order.created_at else None
+            }
+            enhanced_payments.append(enhanced_payment)
+
+        return enhanced_payments
     
     @require_auth
     def post(self):

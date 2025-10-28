@@ -14,18 +14,41 @@ favorite_api = Api(favorite_bp)
 class FavoriteListResource(Resource):
     @require_auth
     def get(self):
-        """Get all favorites - Admin only"""
+        """Get favorites - Admin gets all, users get their own favorites"""
         from flask import session
-        if session.get('user_role') != 'admin':
-            return {'error': 'Admin access required'}, 403
-        
-        favorites = Favorite.query.filter_by(deleted_at=None).all()
-        return [{
-            'id': f.id,
-            'user_id': f.user_id,
-            'product_id': f.product_id,
-            'created_at': f.created_at.isoformat() if f.created_at else None
-        } for f in favorites]
+        from app.models import Product
+
+        current_user_id = session.get('user_id')
+        user_role = session.get('user_role')
+
+        if user_role == 'admin':
+            # Admin gets all favorites
+            favorites = Favorite.query.filter_by(deleted_at=None).all()
+        else:
+            # Regular users get their own favorites
+            favorites = Favorite.query.filter_by(user_id=current_user_id, deleted_at=None).all()
+
+        # Enhance favorites with product details
+        enhanced_favorites = []
+        for favorite in favorites:
+            product = Product.query.get(favorite.product_id) if favorite.product_id else None
+
+            enhanced_favorite = {
+                'id': favorite.id,
+                'user_id': favorite.user_id,
+                'product_id': favorite.product_id,
+                'product': {
+                    'id': product.id if product else None,
+                    'title': product.title if product else 'Unknown Product',
+                    'price': float(product.price) if product and product.price else 0,
+                    'image': product.image if product else None,
+                    'artisan_name': product.artisan_name if product else None
+                } if product else None,
+                'created_at': favorite.created_at.isoformat() if favorite.created_at else None
+            }
+            enhanced_favorites.append(enhanced_favorite)
+
+        return enhanced_favorites
     
     @require_auth
     def post(self):

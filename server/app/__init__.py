@@ -22,6 +22,15 @@ def create_app():
     # Initialize extensions
     db.init_app(flask_app)
     session.init_app(flask_app)
+    # Enable CORS for API routes and allow credentials (cookies/session)
+    from .extensions import cors, socketio
+    cors.init_app(flask_app, resources={
+        r"/api/*": {
+            "origins": ["*", "http://localhost:5173", "http://127.0.0.1:5173"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"]
+        }
+    }, supports_credentials=True)
     socketio.init_app(flask_app)
     
     # Import models to ensure they are registered

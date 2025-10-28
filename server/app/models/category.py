@@ -10,6 +10,8 @@ class Category(db.Model):
     description = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # Soft delete timestamp
+    deleted_at = db.Column(db.DateTime, nullable=True)
 
 class Subcategory(db.Model):
     __tablename__ = "subcategories"
@@ -20,3 +22,5 @@ class Subcategory(db.Model):
     description = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # Soft delete timestamp
+    deleted_at = db.Column(db.DateTime, nullable=True)

@@ -94,31 +94,84 @@ class CartResource(Resource):
 class CartItemListResource(Resource):
     @require_auth
     def get(self):
-        """Get all cart items - Admin only"""
+        """Get user's cart items"""
         from flask import session
-        if session.get('user_role') != 'admin':
-            return {'error': 'Admin access required'}, 403
+        from app.models import Product
         
-        cart_items = CartItem.query.filter_by(deleted_at=None).all()
-        return [{
-            'id': ci.id,
-            'cart_id': ci.cart_id,
-            'product_id': ci.product_id,
-            'quantity': ci.quantity,
-            'created_at': ci.created_at.isoformat() if ci.created_at else None
-        } for ci in cart_items]
+        current_user_id = session.get('user_id')
+        user_role = session.get('user_role')
+        
+        if user_role == 'admin':
+            # Admin gets all cart items
+            cart_items = CartItem.query.all()
+        else:
+            # Regular users get their own cart items
+            user_carts = Cart.query.filter_by(user_id=current_user_id).all()
+            cart_ids = [c.id for c in user_carts]
+            cart_items = CartItem.query.filter(CartItem.cart_id.in_(cart_ids)).all()
+        
+        # Enhance with product details
+        enhanced_items = []
+        for ci in cart_items:
+            product = Product.query.get(ci.product_id)
+            enhanced_items.append({
+                'id': ci.id,
+                'cart_id': ci.cart_id,
+                'product_id': ci.product_id,
+                'quantity': ci.quantity,
+                'price': float(product.price) if product and product.price else 0,
+                'product': {
+                    'id': product.id if product else None,
+                    'title': product.title if product else 'Unknown Product',
+                    'price': float(product.price) if product and product.price else 0,
+                    'image': product.image if product else None,
+                    'artisan_name': product.artisan_name if product else None
+                } if product else None,
+                'created_at': ci.added_at.isoformat() if ci.added_at else None
+            })
+        
+        return enhanced_items
     
     @require_auth
     def post(self):
-        """Create new cart item - Authenticated users only"""
+        """Add item to cart - Authenticated users only"""
+        from flask import session
         data = request.json
         
-        cart_item = CartItem(**data)
-        db.session.add(cart_item)
-        db.session.commit()
+        current_user_id = session.get('user_id')
+        product_id = data.get('product_id')
+        quantity = data.get('quantity', 1)
+        
+        # Get or create user's cart
+        cart = Cart.query.filter_by(user_id=current_user_id).first()
+        if not cart:
+            cart = Cart(user_id=current_user_id)
+            db.session.add(cart)
+            db.session.commit()
+        
+        # Check if item already exists in cart
+        existing_item = CartItem.query.filter_by(
+            cart_id=cart.id, 
+            product_id=product_id
+        ).first()
+        
+        if existing_item:
+            # Update quantity
+            existing_item.quantity += quantity
+            db.session.commit()
+            cart_item = existing_item
+        else:
+            # Create new cart item
+            cart_item = CartItem(
+                cart_id=cart.id,
+                product_id=product_id,
+                quantity=quantity
+            )
+            db.session.add(cart_item)
+            db.session.commit()
         
         return {
-            'message': 'Cart item created successfully',
+            'message': 'Item added to cart successfully',
             'cart_item': {
                 'id': cart_item.id,
                 'cart_id': cart_item.cart_id,
@@ -191,14 +244,30 @@ class CartItemResource(Resource):
             if cart and cart.user_id != session.get('user_id'):
                 return {'error': 'Access denied'}, 403
         
-        from datetime import datetime
-        cart_item.deleted_at = datetime.utcnow()
+        db.session.delete(cart_item)
         db.session.commit()
         
         return {'message': 'Cart item deleted successfully'}, 200
 
+class ClearCartResource(Resource):
+    @require_auth
+    def delete(self):
+        """Clear user's cart"""
+        from flask import session
+        current_user_id = session.get('user_id')
+        
+        # Get user's cart
+        cart = Cart.query.filter_by(user_id=current_user_id).first()
+        if cart:
+            # Delete all cart items
+            cart_items = CartItem.query.filter_by(cart_id=cart.id).all()
+            for item in cart_items:
+                db.session.delete(item)
+            db.session.commit()
+        
+        return {'message': 'Cart cleared successfully'}, 200
+
 # Register routes
-cart_api.add_resource(CartListResource, '/')
-cart_api.add_resource(CartResource, '/<cart_id>')
-cart_api.add_resource(CartItemListResource, '/items/')
-cart_api.add_resource(CartItemResource, '/items/<cart_item_id>')
+cart_api.add_resource(CartItemListResource, '/')
+cart_api.add_resource(CartItemResource, '/<cart_item_id>')
+cart_api.add_resource(ClearCartResource, '/clear')
