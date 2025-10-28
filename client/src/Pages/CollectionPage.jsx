@@ -1,8 +1,16 @@
+<<<<<<< HEAD
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Diamond, Heart, Trash2, ShoppingCart, Share2 } from "lucide-react";
 import Navbar from "../Components/Layout/Navbar";
 import Footer from "../Components/Layout/Footer";
+=======
+import { useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
+import { Diamond, Heart, Trash2, ShoppingCart, Share2 } from 'lucide-react'
+import Navbar from '../Components/Layout/Navbar'
+import Footer from '../Components/Layout/Footer'
+>>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
 
 const CollectionPage = () => {
   const { id } = useParams();
@@ -149,7 +157,7 @@ const CollectionPage = () => {
                     </p>
                     <div className="flex items-center justify-between">
                       <span className="text-xl font-bold text-gray-900">
-                        ${item.price.toFixed(2)}
+                        KSH {item.price.toFixed(2)}
                       </span>
                       <button
                         onClick={() => addToCart(item.id)}

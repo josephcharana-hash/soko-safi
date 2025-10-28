@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Diamond, CreditCard, Lock, CheckCircle } from "lucide-react";
@@ -7,6 +8,21 @@ import Footer from "../Components/Layout/Footer";
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1); // 1: Shipping, 2: Payment, 3: Confirmation
+=======
+import { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Smartphone, Lock, CheckCircle, Loader } from 'lucide-react'
+import Navbar from '../Components/Layout/Navbar'
+import Footer from '../Components/Layout/Footer'
+import { useCart } from '../hooks/useCart.jsx'
+import { api } from '../services/api'
+
+const CheckoutPage = () => {
+  const navigate = useNavigate()
+  const { cartItems, loading, clearCart } = useCart()
+  const [step, setStep] = useState(1) // 1: Shipping, 2: Payment, 3: Confirmation
+  const [processing, setProcessing] = useState(false)
+>>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
   const [shippingInfo, setShippingInfo] = useState({
     fullName: "",
     email: "",
@@ -18,6 +34,7 @@ const CheckoutPage = () => {
     country: "",
   });
   const [paymentInfo, setPaymentInfo] = useState({
+<<<<<<< HEAD
     cardNumber: "",
     cardName: "",
     expiryDate: "",
@@ -52,18 +69,106 @@ const CheckoutPage = () => {
   const shipping = 10.0;
   const tax = subtotal * 0.1;
   const total = subtotal + shipping + tax;
+=======
+    phoneNumber: '',
+    paymentMethod: 'mpesa'
+  })
+
+  useEffect(() => {
+    if (!loading && (!cartItems || cartItems.length === 0)) {
+      navigate('/cart')
+    }
+  }, [cartItems, loading, navigate])
+
+  const subtotal = cartItems.reduce((sum, item) => {
+    const price = typeof item.price === 'string' ? parseFloat(item.price) : item.price
+    return sum + (price * item.quantity)
+  }, 0)
+  const shipping = 150.00 // KSH 150 shipping
+  const tax = subtotal * 0.16 // 16% VAT in Kenya
+  const total = subtotal + shipping + tax
+>>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
 
   const handleShippingSubmit = (e) => {
     e.preventDefault();
     setStep(2);
   };
 
+<<<<<<< HEAD
   const handlePaymentSubmit = (e) => {
     e.preventDefault();
     // Process payment
     console.log("Processing payment...", { shippingInfo, paymentInfo });
     setStep(3);
   };
+=======
+  const handlePaymentSubmit = async (e) => {
+    e.preventDefault()
+    
+    if (cartItems.length === 0) {
+      alert('Your cart is empty')
+      return
+    }
+    
+    try {
+      setProcessing(true)
+      
+      // Create order
+      const orderData = {
+        total_amount: total,
+        status: 'pending'
+      }
+      
+      const order = await api.orders.create(orderData)
+      const orderId = order.order?.id || order.id
+      
+      // Create order items
+      for (const item of cartItems) {
+        const price = typeof item.price === 'string' ? parseFloat(item.price) : item.price
+        await api.orders.createItem({
+          order_id: orderId,
+          product_id: item.product_id || item.id,
+          quantity: item.quantity,
+          unit_price: price,
+          total_price: price * item.quantity,
+          artisan_id: item.product?.artisan_id || item.artisan_id || 1
+        })
+      }
+      
+      // Clear cart after successful order creation
+      await clearCart()
+      
+      // Initiate M-Pesa payment
+      const paymentData = {
+        order_id: orderId,
+        phone_number: paymentInfo.phoneNumber
+      }
+      
+      console.log('Initiating M-Pesa payment...', paymentData)
+      
+      try {
+        const response = await api.payments.mpesa.stkPush(paymentData)
+        
+        if (response && (response.success || response.message)) {
+          alert('Payment request sent to your phone. Please complete the payment.')
+          setStep(3)
+        } else {
+          throw new Error(response?.error || 'Payment initiation failed')
+        }
+      } catch (apiError) {
+        console.warn('M-Pesa API not available, simulating payment for demo')
+        alert('Demo mode: Payment request sent to your phone. Please complete the payment.')
+        setStep(3)
+      }
+      
+    } catch (error) {
+      console.error('Payment failed:', error)
+      alert(`Payment failed: ${error.message}. Please try again.`)
+    } finally {
+      setProcessing(false)
+    }
+  }
+>>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
 
   const handleShippingChange = (e) => {
     setShippingInfo({
@@ -85,6 +190,12 @@ const CheckoutPage = () => {
 
       <main className="flex-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          {loading ? (
+            <div className="flex justify-center items-center min-h-[400px]">
+              <Loader className="w-8 h-8 text-primary animate-spin" />
+            </div>
+          ) : (
+            <>
           {/* Progress Steps */}
           <div className="mb-8 md:mb-12">
             <div className="flex items-center justify-center space-x-2 md:space-x-4">
@@ -330,6 +441,7 @@ const CheckoutPage = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-3">
                       Payment Method
                     </label>
+<<<<<<< HEAD
                     <div className="grid grid-cols-2 gap-4">
                       <button
                         type="button"
@@ -447,16 +559,66 @@ const CheckoutPage = () => {
                             maxLength="4"
                             required
                           />
+=======
+                    <div className="max-w-md">
+                      <div className="p-4 rounded-lg border-2 border-primary bg-primary/5">
+                        <div className="flex items-center space-x-3">
+                          <Smartphone className="w-8 h-8 text-green-600" />
+                          <div>
+                            <p className="font-bold text-gray-900">M-Pesa</p>
+                            <p className="text-sm text-gray-600">Pay with your mobile money</p>
+                          </div>
                         </div>
                       </div>
+                    </div>
+                  </div>
 
-                      <div className="flex items-center space-x-2 p-4 bg-gray-50 rounded-lg mt-6">
-                        <Lock className="w-5 h-5 text-gray-600" />
-                        <p className="text-sm text-gray-600">
-                          Your payment information is secure and encrypted
-                        </p>
+                  <form onSubmit={handlePaymentSubmit} className="space-y-6">
+                    <div>
+                      <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
+                        M-Pesa Phone Number *
+                      </label>
+                      <input
+                        type="tel"
+                        id="phoneNumber"
+                        name="phoneNumber"
+                        value={paymentInfo.phoneNumber}
+                        onChange={handlePaymentChange}
+                        placeholder="254712345678"
+                        className="input-field"
+                        pattern="254[0-9]{9}"
+                        title="Please enter a valid Kenyan phone number (254XXXXXXXXX)"
+                        required
+                      />
+                      <p className="text-sm text-gray-500 mt-1">
+                        Enter your M-Pesa registered phone number (format: 254XXXXXXXXX)
+                      </p>
+                    </div>
+
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <Smartphone className="w-5 h-5 text-green-600 mt-0.5" />
+                        <div>
+                          <h4 className="font-medium text-green-800 mb-2">How M-Pesa Payment Works:</h4>
+                          <ol className="text-sm text-green-700 space-y-1">
+                            <li>1. Click "Pay with M-Pesa" below</li>
+                            <li>2. You'll receive an STK push notification on your phone</li>
+                            <li>3. Enter your M-Pesa PIN to complete the payment</li>
+                            <li>4. You'll receive a confirmation SMS</li>
+                          </ol>
+>>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
+                        </div>
                       </div>
+                    </div>
 
+                    <div className="flex items-center space-x-2 p-4 bg-gray-50 rounded-lg">
+                      <Lock className="w-5 h-5 text-gray-600" />
+                      <p className="text-sm text-gray-600">
+                        Your payment is processed securely through Safaricom M-Pesa
+                      </p>
+                    </div>
+
+<<<<<<< HEAD
                       <div className="flex justify-between pt-6">
                         <button
                           type="button"
@@ -486,15 +648,32 @@ const CheckoutPage = () => {
                           Continue with PayPal
                         </button>
                       </div>
+=======
+                    <div className="flex justify-between pt-6">
+>>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
                       <button
                         type="button"
                         onClick={() => setStep(1)}
-                        className="w-full btn-secondary py-3"
+                        className="btn-secondary px-6 py-3"
                       >
                         Back
                       </button>
+                      <button 
+                        type="submit" 
+                        disabled={processing}
+                        className="btn-primary px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {processing ? (
+                          <>
+                            <Loader className="w-5 h-5 animate-spin inline mr-2" />
+                            Processing...
+                          </>
+                        ) : (
+                          'Pay with M-Pesa'
+                        )}
+                      </button>
                     </div>
-                  )}
+                  </form>
                 </div>
               )}
 
@@ -545,6 +724,7 @@ const CheckoutPage = () => {
                 </h3>
 
                 <div className="space-y-4 mb-6">
+<<<<<<< HEAD
                   {cartItems.map((item) => (
                     <div key={item.id} className="flex items-center space-x-3">
                       <img
@@ -565,35 +745,61 @@ const CheckoutPage = () => {
                       </p>
                     </div>
                   ))}
+=======
+                  {cartItems.map((item) => {
+                    const price = typeof item.price === 'string' ? parseFloat(item.price) : item.price
+                    return (
+                      <div key={item.id} className="flex items-center space-x-3">
+                        <img 
+                          src={item.product?.image || item.image || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=100&h=100&fit=crop'} 
+                          alt={item.product?.title || item.title}
+                          className="w-16 h-16 rounded-lg object-cover"
+                        />
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900 text-sm">{item.product?.title || item.title}</p>
+                          <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+                        </div>
+                        <p className="font-bold text-gray-900">KSH {(price * item.quantity).toFixed(2)}</p>
+                      </div>
+                    )
+                  })}
+>>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
                 </div>
 
                 <div className="border-t border-gray-200 pt-4 space-y-2">
                   <div className="flex justify-between text-gray-700">
                     <span>Subtotal</span>
-                    <span className="font-medium">${subtotal.toFixed(2)}</span>
+                    <span className="font-medium">KSH {subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-gray-700">
                     <span>Shipping</span>
-                    <span className="font-medium">${shipping.toFixed(2)}</span>
+                    <span className="font-medium">KSH {shipping.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-gray-700">
                     <span>Tax</span>
-                    <span className="font-medium">${tax.toFixed(2)}</span>
+                    <span className="font-medium">KSH {tax.toFixed(2)}</span>
                   </div>
                   <div className="border-t border-gray-200 pt-2 mt-2">
                     <div className="flex justify-between">
+<<<<<<< HEAD
                       <span className="text-lg font-bold text-gray-900">
                         Total
                       </span>
                       <span className="text-xl font-bold text-gray-900">
                         ${total.toFixed(2)}
                       </span>
+=======
+                      <span className="text-lg font-bold text-gray-900">Total</span>
+                      <span className="text-xl font-bold text-gray-900">KSH {total.toFixed(2)}</span>
+>>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+            </>
+          )}
         </div>
       </main>
 

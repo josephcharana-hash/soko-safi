@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Diamond, Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
@@ -59,6 +60,51 @@ const CartPage = () => {
   const shipping = 10.0;
   const tax = subtotal * 0.1;
   const total = subtotal + shipping + tax;
+=======
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Trash2, Plus, Minus, ShoppingBag, Loader } from 'lucide-react'
+import Navbar from '../Components/Layout/Navbar'
+import Footer from '../Components/Layout/Footer'
+import { useCart } from '../hooks/useCart.jsx'
+
+const CartPage = () => {
+  const navigate = useNavigate()
+  const { cartItems, loading, updateQuantity, removeFromCart } = useCart()
+  const [updating, setUpdating] = useState({})
+
+  const handleUpdateQuantity = async (id, newQuantity) => {
+    if (newQuantity < 1) return
+    
+    try {
+      setUpdating(prev => ({ ...prev, [id]: true }))
+      await updateQuantity(id, newQuantity)
+    } catch (error) {
+      alert('Failed to update quantity. Please try again.')
+    } finally {
+      setUpdating(prev => ({ ...prev, [id]: false }))
+    }
+  }
+
+  const handleRemoveItem = async (id) => {
+    try {
+      setUpdating(prev => ({ ...prev, [id]: true }))
+      await removeFromCart(id)
+    } catch (error) {
+      alert('Failed to remove item. Please try again.')
+    } finally {
+      setUpdating(prev => ({ ...prev, [id]: false }))
+    }
+  }
+
+  const subtotal = cartItems.reduce((sum, item) => {
+    const price = typeof item.price === 'string' ? parseFloat(item.price) : item.price
+    return sum + (price * item.quantity)
+  }, 0)
+  const shipping = 150.00 // KSH 150 shipping
+  const tax = subtotal * 0.16 // 16% VAT in Kenya
+  const total = subtotal + shipping + tax
+>>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
 
   const handleCheckout = () => {
     navigate("/checkout");
@@ -74,7 +120,12 @@ const CartPage = () => {
             Shopping Cart
           </h1>
 
-          {cartItems.length === 0 ? (
+          {loading ? (
+            <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
+              <Loader className="w-8 h-8 text-primary mx-auto mb-4 animate-spin" />
+              <p className="text-gray-600">Loading your cart...</p>
+            </div>
+          ) : cartItems.length === 0 ? (
             <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
               <ShoppingBag className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
@@ -100,41 +151,64 @@ const CartPage = () => {
                     className="bg-white rounded-xl shadow-sm p-6"
                   >
                     <div className="flex items-start space-x-4">
+<<<<<<< HEAD
                       <Link to={`/product/${item.productId}`}>
                         <img
                           src={item.image}
                           alt={item.title}
+=======
+                      <Link to={`/product/${item.product_id || item.productId}`}>
+                        <img 
+                          src={item.product?.image || item.image || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=100&h=100&fit=crop'} 
+                          alt={item.product?.title || item.title}
+>>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
                           className="w-24 h-24 rounded-lg object-cover"
                         />
                       </Link>
                       <div className="flex-1">
                         <div className="flex items-start justify-between mb-2">
                           <div>
+<<<<<<< HEAD
                             <Link
                               to={`/product/${item.productId}`}
+=======
+                            <Link 
+                              to={`/product/${item.product_id || item.productId}`}
+>>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
                               className="text-lg font-bold text-gray-900 hover:text-primary"
                             >
-                              {item.title}
+                              {item.product?.title || item.title}
                             </Link>
+<<<<<<< HEAD
                             <p className="text-sm text-gray-600">
                               by {item.artisan}
                             </p>
+=======
+                            <p className="text-sm text-gray-600">by {item.product?.artisan_name || item.artisan || 'Unknown Artisan'}</p>
+>>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
                           </div>
                           <button
-                            onClick={() => removeItem(item.id)}
-                            className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                            onClick={() => handleRemoveItem(item.id)}
+                            disabled={updating[item.id]}
+                            className="p-2 text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
                           >
-                            <Trash2 className="w-5 h-5" />
+                            {updating[item.id] ? <Loader className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
                           </button>
                         </div>
 
                         <div className="flex items-center justify-between mt-4">
                           <div className="flex items-center space-x-3">
                             <button
+<<<<<<< HEAD
                               onClick={() =>
                                 updateQuantity(item.id, item.quantity - 1)
                               }
                               className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50"
+=======
+                              onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                              disabled={updating[item.id] || item.quantity <= 1}
+                              className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50"
+>>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
                             >
                               <Minus className="w-4 h-4" />
                             </button>
@@ -142,16 +216,22 @@ const CartPage = () => {
                               {item.quantity}
                             </span>
                             <button
+<<<<<<< HEAD
                               onClick={() =>
                                 updateQuantity(item.id, item.quantity + 1)
                               }
                               className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50"
+=======
+                              onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                              disabled={updating[item.id]}
+                              className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50"
+>>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
                             >
                               <Plus className="w-4 h-4" />
                             </button>
                           </div>
                           <p className="text-xl font-bold text-gray-900">
-                            ${(item.price * item.quantity).toFixed(2)}
+                            KSH {((typeof item.price === 'string' ? parseFloat(item.price) : item.price) * item.quantity).toFixed(2)}
                           </p>
                         </div>
                       </div>
@@ -170,6 +250,7 @@ const CartPage = () => {
                   <div className="space-y-3 mb-6">
                     <div className="flex items-center justify-between text-gray-700">
                       <span>Subtotal ({cartItems.length} items)</span>
+<<<<<<< HEAD
                       <span className="font-medium">
                         ${subtotal.toFixed(2)}
                       </span>
@@ -179,19 +260,31 @@ const CartPage = () => {
                       <span className="font-medium">
                         ${shipping.toFixed(2)}
                       </span>
+=======
+                      <span className="font-medium">KSH {subtotal.toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-gray-700">
+                      <span>Shipping</span>
+                      <span className="font-medium">KSH {shipping.toFixed(2)}</span>
+>>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
                     </div>
                     <div className="flex items-center justify-between text-gray-700">
                       <span>Tax</span>
-                      <span className="font-medium">${tax.toFixed(2)}</span>
+                      <span className="font-medium">KSH {tax.toFixed(2)}</span>
                     </div>
                     <div className="border-t border-gray-200 pt-3 mt-3">
                       <div className="flex items-center justify-between">
+<<<<<<< HEAD
                         <span className="text-lg font-bold text-gray-900">
                           Total
                         </span>
                         <span className="text-2xl font-bold text-gray-900">
                           ${total.toFixed(2)}
                         </span>
+=======
+                        <span className="text-lg font-bold text-gray-900">Total</span>
+                        <span className="text-2xl font-bold text-gray-900">KSH {total.toFixed(2)}</span>
+>>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
                       </div>
                     </div>
                   </div>
@@ -213,7 +306,10 @@ const CartPage = () => {
                   {/* Trust Badges */}
                   <div className="mt-6 pt-6 border-t border-gray-200">
                     <p className="text-sm text-gray-600 mb-3">We accept:</p>
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center flex-wrap gap-2">
+                      <div className="px-3 py-2 bg-green-100 rounded text-xs font-medium text-green-700">
+                        M-Pesa
+                      </div>
                       <div className="px-3 py-2 bg-gray-100 rounded text-xs font-medium text-gray-700">
                         Visa
                       </div>
