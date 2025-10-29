@@ -13,6 +13,10 @@ export const uploadToCloudinary = async (file) => {
       {
         method: 'POST',
         body: formData,
+        credentials: 'omit', // Prevent CSRF by not sending cookies
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest' // CSRF protection header
+        }
       }
     )
 

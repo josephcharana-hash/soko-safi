@@ -43,10 +43,12 @@ def handle_message(data):
     
     # Send to receiver if online
     if receiver_id in connected_users:
+        # Sanitize message content to prevent XSS
+        safe_message = str(message_text).replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
         socketio.emit('new_message', {
             'id': message.id,
             'sender_id': sender_id,
-            'message': message_text,
+            'message': safe_message,
             'timestamp': message.timestamp.isoformat()
         }, room=connected_users[receiver_id])
     

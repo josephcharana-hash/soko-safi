@@ -28,10 +28,11 @@ def ensure_deleted_at_columns(app):
 
         # Add column for SQLite (simple, nullable)
         if engine.dialect.name == "sqlite":
-            sql = f"ALTER TABLE {table_name} ADD COLUMN {col} DATETIME"
+            # Use parameterized query to prevent SQL injection
+            sql = text("ALTER TABLE :table_name ADD COLUMN :col_name DATETIME")
             try:
                 with engine.connect() as conn:
-                    conn.execute(text(sql))
+                    conn.execute(sql, {"table_name": table_name, "col_name": col})
                     conn.commit()
                 print(f"Added column {col} to {table_name}")
             except Exception as e:

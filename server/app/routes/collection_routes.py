@@ -19,16 +19,23 @@ class CollectionListResource(Resource):
     
     @require_role('artisan', 'admin')
     def post(self):
-        from flask import session
-        data = request.json
-        
-        if session.get('user_role') != 'admin':
-            data['artisan_id'] = session.get('user_id')
-        
-        collection = Collection(**data)
-        db.session.add(collection)
-        db.session.commit()
-        return {'id': collection.id}, 201
+        try:
+            from flask import session
+            data = request.json
+            
+            if not data:
+                return {'error': 'No data provided'}, 400
+            
+            if session.get('user_role') != 'admin':
+                data['artisan_id'] = session.get('user_id')
+            
+            collection = Collection(**data)
+            db.session.add(collection)
+            db.session.commit()
+            return {'id': collection.id}, 201
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to create collection'}, 500
 
 class CollectionResource(Resource):
     def get(self, collection_id):

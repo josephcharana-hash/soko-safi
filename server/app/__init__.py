@@ -7,7 +7,10 @@ load_dotenv()
 
 def create_app():
     flask_app = Flask(__name__)
-    flask_app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key')
+    secret_key = os.getenv('SECRET_KEY')
+    if not secret_key:
+        raise ValueError('SECRET_KEY environment variable is required')
+    flask_app.config['SECRET_KEY'] = secret_key
     flask_app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
     flask_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
@@ -88,12 +91,16 @@ def create_app():
     
     @flask_app.route('/test/order/<int:user_id>/<int:order_id>/<status>')
     def test_order_notification(user_id, order_id, status):
-        notify_order_status_change(user_id, order_id, status)
+        # Sanitize status to prevent XSS
+        safe_status = str(status).replace('<', '&lt;').replace('>', '&gt;')
+        notify_order_status_change(user_id, order_id, safe_status)
         return f'Order notification sent to user {user_id}'
 
     @flask_app.route('/test/payment/<int:user_id>/<int:payment_id>/<status>')
     def test_payment_notification(user_id, payment_id, status):
-        notify_payment_confirmation(user_id, payment_id, status)
+        # Sanitize status to prevent XSS
+        safe_status = str(status).replace('<', '&lt;').replace('>', '&gt;')
+        notify_payment_confirmation(user_id, payment_id, safe_status)
         return f'Payment notification sent to user {user_id}'
     
     return flask_app

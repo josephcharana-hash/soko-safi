@@ -8,8 +8,8 @@ const apiRequest = async (endpoint, options = {}) => {
     const config = {
       method: 'GET',
       headers: options.headers || {},
-      credentials: 'include',
-      ...options,
+      credentials: import.meta.env.VITE_API_CREDENTIALS || 'include',
+      ...options
     };
     
     // Only set Content-Type for non-FormData requests
