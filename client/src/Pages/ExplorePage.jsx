@@ -40,15 +40,15 @@ const ExplorePage = () => {
         const categoryMap = new Map()
         productsArray.forEach(product => {
           const category = product.category || 'other'
-          categoryMap.set(category, (categoryMap.get(category) || 0) + 1)
+          categoryMap.set(category.toLowerCase(), (categoryMap.get(category.toLowerCase()) || 0) + 1)
         })
         
         const categoriesWithCounts = [
           { id: 'all', name: 'All Categories', count: productsArray.length },
           ...categoriesResponse.map(cat => ({
-            id: cat.id,
+            id: cat.name.toLowerCase(), // Use category name as ID for matching
             name: cat.name,
-            count: categoryMap.get(cat.id) || 0
+            count: categoryMap.get(cat.name.toLowerCase()) || 0
           }))
         ]
         
@@ -78,7 +78,7 @@ const ExplorePage = () => {
     const matchesSearch = work.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          work.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          work.artisan_name?.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = selectedCategory === 'all' || work.category === selectedCategory
+    const matchesCategory = selectedCategory === 'all' || work.category?.toLowerCase() === selectedCategory
     return matchesSearch && matchesCategory
   })
 

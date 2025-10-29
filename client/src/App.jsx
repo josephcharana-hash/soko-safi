@@ -79,11 +79,6 @@ function App() {
       <AuthProvider>
         <CartProvider>
           <Router>
-            {/* Skip to main content link for accessibility */}
-            <a href="#main-content" className="skip-link">
-              Skip to main content
-            </a>
-
             <div className="min-h-screen bg-gray-50">
               <Suspense fallback={<PageLoader />}>
                 <Routes>

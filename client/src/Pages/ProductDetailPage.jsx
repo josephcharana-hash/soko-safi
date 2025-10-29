@@ -7,12 +7,12 @@ import LazyImage from '../Components/LazyImage'
 import LoadingSpinner from '../Components/LoadingSpinner'
 import ReviewModal from '../Components/ReviewModal'
 import { api } from '../services/api'
-import { useCart } from '../hooks/useCart'
+import { useAuth } from '../context/AuthContext'
 
 const ProductDetailPage = () => {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { addToCart } = useCart()
+  const { isAuthenticated } = useAuth()
   const [quantity, setQuantity] = useState(1)
   const [activeImage, setActiveImage] = useState(0)
   const [selectedSize, setSelectedSize] = useState('')
@@ -137,23 +137,52 @@ const ProductDetailPage = () => {
   }
 
   const handleAddToCart = async () => {
+    if (!isAuthenticated) {
+      alert('Please log in to add items to your cart')
+      navigate('/login')
+      return
+    }
+
     try {
       setAddingToCart(true)
       const productId = product.id || id
       if (!productId) {
         throw new Error('Product ID not found')
       }
-      await addToCart(productId, quantity)
+      
+      // Check session first
+      console.log('Checking session before adding to cart...')
+      const session = await api.auth.getSession()
+      console.log('Session check result:', session)
+      
+      if (!session || !session.authenticated) {
+        alert('Your session has expired. Please log in again.')
+        navigate('/login')
+        return
+      }
+      
+      await api.cart.add(productId, quantity)
       alert(`Added ${quantity} ${product.title} to cart!`)
     } catch (error) {
       console.error('Failed to add to cart:', error)
-      alert(error.message || 'Failed to add item to cart. Please try again.')
+      if (error.message.includes('Internal Server Error')) {
+        alert('Please log in to add items to your cart')
+        navigate('/login')
+      } else {
+        alert(error.message || 'Failed to add item to cart. Please try again.')
+      }
     } finally {
       setAddingToCart(false)
     }
   }
 
   const handleBuyNow = async () => {
+    if (!isAuthenticated) {
+      alert('Please log in to purchase items')
+      navigate('/login')
+      return
+    }
+
     try {
       setBuyingNow(true)
       
@@ -164,15 +193,19 @@ const ProductDetailPage = () => {
       }
       
       console.log('Buy now - adding to cart:', { productId, quantity })
-      await addToCart(productId, quantity)
+      await api.cart.add(productId, quantity)
       
       // Navigate to checkout immediately
       navigate('/checkout')
       
     } catch (error) {
       console.error('Failed to add to cart for buy now:', error)
-      const errorMessage = error.message || 'Failed to add item to cart. Please try again.'
-      alert(errorMessage)
+      if (error.message.includes('Internal Server Error')) {
+        alert('Please log in to purchase items')
+        navigate('/login')
+      } else {
+        alert(error.message || 'Failed to add item to cart. Please try again.')
+      }
     } finally {
       setBuyingNow(false)
     }
