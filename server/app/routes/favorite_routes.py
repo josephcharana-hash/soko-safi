@@ -56,13 +56,34 @@ class FavoriteListResource(Resource):
         from flask import session
         data = request.json
         
-        # Set user_id to current user if not admin
-        if session.get('user_role') != 'admin':
-            data['user_id'] = session.get('user_id')
+        if not data or 'product_id' not in data:
+            return {'error': 'product_id is required'}, 400
         
-        favorite = Favorite(**data)
-        db.session.add(favorite)
-        db.session.commit()
+        try:
+            # Set user_id to current user if not admin
+            user_id = session.get('user_id')
+            if session.get('user_role') == 'admin' and 'user_id' in data:
+                user_id = data['user_id']
+            
+            # Check if favorite already exists
+            existing = Favorite.query.filter_by(
+                user_id=user_id, 
+                product_id=data['product_id'],
+                deleted_at=None
+            ).first()
+            
+            if existing:
+                return {'error': 'Product already in favorites'}, 409
+            
+            favorite = Favorite(
+                user_id=user_id,
+                product_id=data['product_id']
+            )
+            db.session.add(favorite)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to create favorite'}, 500
         
         return {
             'message': 'Favorite created successfully',
@@ -91,12 +112,20 @@ class FavoriteResource(Resource):
         favorite = Favorite.query.get_or_404(favorite_id)
         data = request.json
         
-        if 'product_id' in data:
-            favorite.product_id = data['product_id']
-        if 'user_id' in data and session.get('user_role') == 'admin':
-            favorite.user_id = data['user_id']
+        if not data:
+            return {'error': 'No data provided'}, 400
         
-        db.session.commit()
+        try:
+            from flask import session
+            if 'product_id' in data:
+                favorite.product_id = data['product_id']
+            if 'user_id' in data and session.get('user_role') == 'admin':
+                favorite.user_id = data['user_id']
+            
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to update favorite'}, 500
         
         return {
             'message': 'Favorite updated successfully',
@@ -111,9 +140,14 @@ class FavoriteResource(Resource):
     def delete(self, favorite_id):
         """Delete favorite - Owner or Admin only"""
         favorite = Favorite.query.get_or_404(favorite_id)
-        from datetime import datetime
-        favorite.deleted_at = datetime.utcnow()
-        db.session.commit()
+        
+        try:
+            from datetime import datetime
+            favorite.deleted_at = datetime.utcnow()
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to delete favorite'}, 500
         
         return {'message': 'Favorite deleted successfully'}, 200
 

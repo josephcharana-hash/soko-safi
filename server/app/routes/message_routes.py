@@ -35,13 +35,23 @@ class MessageListResource(Resource):
         from flask import session
         data = request.json
         
-        # Set sender_id to current user if not admin
-        if session.get('user_role') != 'admin':
-            data['sender_id'] = session.get('user_id')
+        # Validate required fields
+        if not data or 'receiver_id' not in data or 'message' not in data:
+            return {'error': 'receiver_id and message are required'}, 400
         
-        message = Message(**data)
-        db.session.add(message)
-        db.session.commit()
+        # Create message with explicit field assignment to prevent mass assignment
+        message = Message(
+            sender_id=session.get('user_id'),  # Always use current user as sender
+            receiver_id=data.get('receiver_id'),
+            message=data.get('message')
+        )
+        
+        try:
+            db.session.add(message)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to create message'}, 500
         
         return {
             'message': 'Message created successfully',

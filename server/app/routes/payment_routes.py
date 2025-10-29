@@ -55,9 +55,22 @@ class PaymentListResource(Resource):
         """Create new payment - Authenticated users only"""
         data = request.json
         
-        payment = Payment(**data)
-        db.session.add(payment)
-        db.session.commit()
+        if not data or 'order_id' not in data or 'amount' not in data:
+            return {'error': 'order_id and amount are required'}, 400
+        
+        try:
+            payment = Payment(
+                order_id=data.get('order_id'),
+                amount=data.get('amount'),
+                currency=data.get('currency', 'KES'),
+                method=PaymentMethod(data.get('method', 'mpesa')),
+                status=PaymentStatus.pending
+            )
+            db.session.add(payment)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to create payment'}, 500
         
         return {
             'message': 'Payment created successfully',
@@ -73,15 +86,18 @@ class PaymentResource(Resource):
     @require_auth
     def get(self, payment_id):
         """Get payment details - Owner or Admin only"""
-        payment = Payment.query.get_or_404(payment_id)
-        
-        # Check if user owns the order
-        from flask import session
-        if session.get('user_role') != 'admin':
-            from app.models import Order
-            order = Order.query.get(payment.order_id)
-            if order and order.user_id != session.get('user_id'):
-                return {'error': 'Access denied'}, 403
+        try:
+            payment = Payment.query.get_or_404(payment_id)
+            
+            # Check if user owns the order
+            from flask import session
+            if session.get('user_role') != 'admin':
+                from app.models import Order
+                order = Order.query.get(payment.order_id)
+                if order and order.user_id != session.get('user_id'):
+                    return {'error': 'Access denied'}, 403
+        except Exception as e:
+            return {'error': 'Payment not found'}, 404
         
         return {
             'id': payment.id,
@@ -96,28 +112,34 @@ class PaymentResource(Resource):
     @require_auth
     def put(self, payment_id):
         """Update payment - Owner or Admin only"""
-        payment = Payment.query.get_or_404(payment_id)
-        
-        # Check if user owns the order
-        from flask import session
-        if session.get('user_role') != 'admin':
-            from app.models import Order
-            order = Order.query.get(payment.order_id)
-            if order and order.user_id != session.get('user_id'):
-                return {'error': 'Access denied'}, 403
-        
-        data = request.json
-        
-        if 'status' in data:
-            payment.status = PaymentStatus(data['status'])
-        if 'method' in data:
-            payment.method = PaymentMethod(data['method'])
-        if 'amount' in data:
-            payment.amount = data['amount']
-        if 'mpesa_transaction_id' in data:
-            payment.mpesa_transaction_id = data['mpesa_transaction_id']
-        
-        db.session.commit()
+        try:
+            payment = Payment.query.get_or_404(payment_id)
+            
+            # Check if user owns the order
+            from flask import session
+            if session.get('user_role') != 'admin':
+                from app.models import Order
+                order = Order.query.get(payment.order_id)
+                if order and order.user_id != session.get('user_id'):
+                    return {'error': 'Access denied'}, 403
+            
+            data = request.json
+            if not data:
+                return {'error': 'No data provided'}, 400
+            
+            if 'status' in data:
+                payment.status = PaymentStatus(data['status'])
+            if 'method' in data:
+                payment.method = PaymentMethod(data['method'])
+            if 'amount' in data:
+                payment.amount = data['amount']
+            if 'mpesa_transaction_id' in data:
+                payment.mpesa_transaction_id = data['mpesa_transaction_id']
+            
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to update payment'}, 500
         
         return {
             'message': 'Payment updated successfully',
@@ -133,19 +155,23 @@ class PaymentResource(Resource):
     @require_auth
     def delete(self, payment_id):
         """Delete payment - Owner or Admin only"""
-        payment = Payment.query.get_or_404(payment_id)
-        
-        # Check if user owns the order
-        from flask import session
-        if session.get('user_role') != 'admin':
-            from app.models import Order
-            order = Order.query.get(payment.order_id)
-            if order and order.user_id != session.get('user_id'):
-                return {'error': 'Access denied'}, 403
-        
-        from datetime import datetime
-        payment.deleted_at = datetime.utcnow()
-        db.session.commit()
+        try:
+            payment = Payment.query.get_or_404(payment_id)
+            
+            # Check if user owns the order
+            from flask import session
+            if session.get('user_role') != 'admin':
+                from app.models import Order
+                order = Order.query.get(payment.order_id)
+                if order and order.user_id != session.get('user_id'):
+                    return {'error': 'Access denied'}, 403
+            
+            from datetime import datetime
+            payment.deleted_at = datetime.utcnow()
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to delete payment'}, 500
         
         return {'message': 'Payment deleted successfully'}, 200
 

@@ -67,13 +67,25 @@ class OrderListResource(Resource):
         from flask import session
         data = request.json
         
-        # Set user_id to current user if not admin
-        if session.get('user_role') != 'admin':
-            data['user_id'] = session.get('user_id')
+        if not data:
+            return {'error': 'No data provided'}, 400
         
-        order = Order(**data)
-        db.session.add(order)
-        db.session.commit()
+        try:
+            # Set user_id to current user if not admin
+            user_id = session.get('user_id')
+            if session.get('user_role') == 'admin' and 'user_id' in data:
+                user_id = data['user_id']
+            
+            order = Order(
+                user_id=user_id,
+                status=OrderStatus(data.get('status', 'pending')),
+                total_amount=data.get('total_amount', 0)
+            )
+            db.session.add(order)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to create order'}, 500
         
         return {
             'message': 'Order created successfully',
@@ -101,18 +113,26 @@ class OrderResource(Resource):
     @require_ownership_or_role('user_id', 'admin')
     def put(self, order_id):
         """Update order - Owner or Admin only"""
-        order = Order.query.get_or_404(order_id)
-        data = request.json
-        
-        # Update allowed fields
-        if 'status' in data:
-            order.status = OrderStatus(data['status'])
-        if 'total_amount' in data:
-            order.total_amount = data['total_amount']
-        if 'user_id' in data and session.get('user_role') == 'admin':
-            order.user_id = data['user_id']
-        
-        db.session.commit()
+        try:
+            order = Order.query.get_or_404(order_id)
+            data = request.json
+            
+            if not data:
+                return {'error': 'No data provided'}, 400
+            
+            from flask import session
+            # Update allowed fields
+            if 'status' in data:
+                order.status = OrderStatus(data['status'])
+            if 'total_amount' in data:
+                order.total_amount = data['total_amount']
+            if 'user_id' in data and session.get('user_role') == 'admin':
+                order.user_id = data['user_id']
+            
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to update order'}, 500
         
         return {
             'message': 'Order updated successfully',
@@ -127,10 +147,14 @@ class OrderResource(Resource):
     @require_ownership_or_role('user_id', 'admin')
     def delete(self, order_id):
         """Delete order - Owner or Admin only"""
-        order = Order.query.get_or_404(order_id)
-        from datetime import datetime
-        order.deleted_at = datetime.utcnow()
-        db.session.commit()
+        try:
+            order = Order.query.get_or_404(order_id)
+            from datetime import datetime
+            order.deleted_at = datetime.utcnow()
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to delete order'}, 500
         
         return {'message': 'Order deleted successfully'}, 200
 
@@ -159,9 +183,23 @@ class OrderItemListResource(Resource):
         """Create new order item - Authenticated users only"""
         data = request.json
         
-        order_item = OrderItem(**data)
-        db.session.add(order_item)
-        db.session.commit()
+        if not data or not all(k in data for k in ['order_id', 'product_id', 'quantity']):
+            return {'error': 'order_id, product_id, and quantity are required'}, 400
+        
+        try:
+            order_item = OrderItem(
+                order_id=data.get('order_id'),
+                product_id=data.get('product_id'),
+                artisan_id=data.get('artisan_id'),
+                quantity=data.get('quantity'),
+                unit_price=data.get('unit_price', 0),
+                total_price=data.get('total_price', 0)
+            )
+            db.session.add(order_item)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to create order item'}, 500
         
         return {
             'message': 'Order item created successfully',
@@ -178,14 +216,17 @@ class OrderItemResource(Resource):
     @require_auth
     def get(self, order_item_id):
         """Get order item details - Owner or Admin only"""
-        order_item = OrderItem.query.get_or_404(order_item_id)
-        
-        # Check if user owns the order
-        from flask import session
-        if session.get('user_role') != 'admin':
-            order = Order.query.get(order_item.order_id)
-            if order and order.user_id != session.get('user_id'):
-                return {'error': 'Access denied'}, 403
+        try:
+            order_item = OrderItem.query.get_or_404(order_item_id)
+            
+            # Check if user owns the order
+            from flask import session
+            if session.get('user_role') != 'admin':
+                order = Order.query.get(order_item.order_id)
+                if order and order.user_id != session.get('user_id'):
+                    return {'error': 'Access denied'}, 403
+        except Exception as e:
+            return {'error': 'Order item not found'}, 404
         
         return {
             'id': order_item.id,
@@ -201,29 +242,35 @@ class OrderItemResource(Resource):
     @require_auth
     def put(self, order_item_id):
         """Update order item - Owner or Admin only"""
-        order_item = OrderItem.query.get_or_404(order_item_id)
-        
-        # Check if user owns the order
-        from flask import session
-        if session.get('user_role') != 'admin':
-            order = Order.query.get(order_item.order_id)
-            if order and order.user_id != session.get('user_id'):
-                return {'error': 'Access denied'}, 403
-        
-        data = request.json
-        
-        if 'quantity' in data:
-            order_item.quantity = data['quantity']
-        if 'unit_price' in data:
-            order_item.unit_price = data['unit_price']
-        if 'total_price' in data:
-            order_item.total_price = data['total_price']
-        if 'product_id' in data:
-            order_item.product_id = data['product_id']
-        if 'artisan_id' in data:
-            order_item.artisan_id = data['artisan_id']
-        
-        db.session.commit()
+        try:
+            order_item = OrderItem.query.get_or_404(order_item_id)
+            
+            # Check if user owns the order
+            from flask import session
+            if session.get('user_role') != 'admin':
+                order = Order.query.get(order_item.order_id)
+                if order and order.user_id != session.get('user_id'):
+                    return {'error': 'Access denied'}, 403
+            
+            data = request.json
+            if not data:
+                return {'error': 'No data provided'}, 400
+            
+            if 'quantity' in data:
+                order_item.quantity = data['quantity']
+            if 'unit_price' in data:
+                order_item.unit_price = data['unit_price']
+            if 'total_price' in data:
+                order_item.total_price = data['total_price']
+            if 'product_id' in data:
+                order_item.product_id = data['product_id']
+            if 'artisan_id' in data:
+                order_item.artisan_id = data['artisan_id']
+            
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to update order item'}, 500
         
         return {
             'message': 'Order item updated successfully',
@@ -239,18 +286,22 @@ class OrderItemResource(Resource):
     @require_auth
     def delete(self, order_item_id):
         """Delete order item - Owner or Admin only"""
-        order_item = OrderItem.query.get_or_404(order_item_id)
-        
-        # Check if user owns the order
-        from flask import session
-        if session.get('user_role') != 'admin':
-            order = Order.query.get(order_item.order_id)
-            if order and order.user_id != session.get('user_id'):
-                return {'error': 'Access denied'}, 403
-        
-        from datetime import datetime
-        order_item.deleted_at = datetime.utcnow()
-        db.session.commit()
+        try:
+            order_item = OrderItem.query.get_or_404(order_item_id)
+            
+            # Check if user owns the order
+            from flask import session
+            if session.get('user_role') != 'admin':
+                order = Order.query.get(order_item.order_id)
+                if order and order.user_id != session.get('user_id'):
+                    return {'error': 'Access denied'}, 403
+            
+            from datetime import datetime
+            order_item.deleted_at = datetime.utcnow()
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to delete order item'}, 500
         
         return {'message': 'Order item deleted successfully'}, 200
 

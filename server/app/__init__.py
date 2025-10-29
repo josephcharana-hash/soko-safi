@@ -11,7 +11,10 @@ def create_app():
     if not secret_key:
         raise ValueError('SECRET_KEY environment variable is required')
     flask_app.config['SECRET_KEY'] = secret_key
-    flask_app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+    database_url = os.getenv('DATABASE_URL')
+    if not database_url:
+        raise ValueError('DATABASE_URL environment variable is required')
+    flask_app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     flask_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
     # Session configuration
@@ -91,16 +94,16 @@ def create_app():
     
     @flask_app.route('/test/order/<int:user_id>/<int:order_id>/<status>')
     def test_order_notification(user_id, order_id, status):
-        # Sanitize status to prevent XSS
-        safe_status = str(status).replace('<', '&lt;').replace('>', '&gt;')
+        import html
+        safe_status = html.escape(str(status))
         notify_order_status_change(user_id, order_id, safe_status)
-        return f'Order notification sent to user {user_id}'
+        return f'Order notification sent to user {html.escape(str(user_id))}'
 
     @flask_app.route('/test/payment/<int:user_id>/<int:payment_id>/<status>')
     def test_payment_notification(user_id, payment_id, status):
-        # Sanitize status to prevent XSS
-        safe_status = str(status).replace('<', '&lt;').replace('>', '&gt;')
+        import html
+        safe_status = html.escape(str(status))
         notify_payment_confirmation(user_id, payment_id, safe_status)
-        return f'Payment notification sent to user {user_id}'
+        return f'Payment notification sent to user {html.escape(str(user_id))}'
     
     return flask_app

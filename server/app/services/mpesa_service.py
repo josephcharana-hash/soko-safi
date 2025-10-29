@@ -18,19 +18,26 @@ class MpesaService:
     def __init__(self):
         self.consumer_key = os.getenv('MPESA_CONSUMER_KEY')
         self.consumer_secret = os.getenv('MPESA_CONSUMER_SECRET')
-        self.shortcode = os.getenv('MPESA_SHORTCODE', '174379') # Test shortcode
-        self.passkey = os.getenv('MPESA_PASSKEY', 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919') # Test passkey
-        self.base_url = 'https://sandbox.safaricom.co.ke' # Change to live URL in production
+        self.shortcode = os.getenv('MPESA_SHORTCODE')
+        self.passkey = os.getenv('MPESA_PASSKEY')
+        self.base_url = os.getenv('MPESA_BASE_URL', 'https://sandbox.safaricom.co.ke')
+        
+        # Validate required credentials
+        if not all([self.consumer_key, self.consumer_secret, self.shortcode, self.passkey]):
+            raise ValueError('Missing required M-Pesa credentials in environment variables')
  
     def get_access_token(self):
         """Get M-Pesa access token"""
         try:
+            if not self.consumer_key or not self.consumer_secret:
+                raise ValueError('M-Pesa credentials not configured')
+                
             auth = base64.b64encode(f"{self.consumer_key}:{self.consumer_secret}".encode()).decode()
             headers = {
                 'Authorization': f'Basic {auth}',
                 'Content-Type': 'application/json'
             }
-            response = requests.get(f'{self.base_url}/oauth/v1/generate?grant_type=client_credentials', headers=headers)
+            response = requests.get(f'{self.base_url}/oauth/v1/generate?grant_type=client_credentials', headers=headers, timeout=30)
             response.raise_for_status()
             return response.json()['access_token']
         except Exception as e:
