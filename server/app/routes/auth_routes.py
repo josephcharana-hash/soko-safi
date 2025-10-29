@@ -32,6 +32,10 @@ def validate_password(password):
 class RegisterResource(Resource):
     """Handle user registration"""
     
+    def options(self):
+        """Handle CORS preflight request"""
+        return {}, 200
+    
     def post(self):
         try:
             data = request.get_json()
@@ -118,6 +122,10 @@ class RegisterResource(Resource):
 class LoginResource(Resource):
     """Handle user login"""
     
+    def options(self):
+        """Handle CORS preflight request"""
+        return {}, 200
+    
     def post(self):
         try:
             data = request.get_json()
@@ -163,6 +171,10 @@ class LoginResource(Resource):
 
 class LogoutResource(Resource):
     """Handle user logout"""
+    
+    def options(self):
+        """Handle CORS preflight request"""
+        return {}, 200
     
     @require_auth
     def post(self):
