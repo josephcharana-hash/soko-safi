@@ -1,7 +1,9 @@
-from flask import Blueprint, request, current_app, jsonify
-from werkzeug.utils import secure_filename
+from flask import Blueprint, request, jsonify
+import requests
 import os
-import uuid
+from dotenv import load_dotenv
+
+load_dotenv()
 
 upload_bp = Blueprint('upload_bp', __name__)
 
@@ -23,22 +25,35 @@ def upload_file():
     if not allowed_file(file.filename):
         return jsonify({'error': 'Invalid file type'}), 400
     
-    # Generate unique filename
-    ext = file.filename.rsplit('.', 1)[1].lower()
-    filename = f"{uuid.uuid4()}.{ext}"
-    
-    # Create uploads directory if it doesn't exist
-    upload_folder = os.path.join(current_app.root_path, 'uploads')
-    os.makedirs(upload_folder, exist_ok=True)
-    
-    filepath = os.path.join(upload_folder, filename)
-    file.save(filepath)
-    
-    # Return URL to access the file
-    file_url = f"/uploads/{filename}"
-    
-    return jsonify({
-        'message': 'File uploaded successfully',
-        'url': file_url,
-        'filename': filename
-    }), 200
+    try:
+        # Upload to Cloudinary
+        cloud_name = os.getenv('CLOUDINARY_CLOUD_NAME')
+        upload_preset = os.getenv('CLOUDINARY_UPLOAD_PRESET')
+        
+        if not cloud_name or not upload_preset:
+            return jsonify({'error': 'Cloudinary configuration missing'}), 500
+        
+        # Prepare the upload
+        upload_url = f"https://api.cloudinary.com/v1_1/{cloud_name}/image/upload"
+        
+        files = {'file': file}
+        data = {
+            'upload_preset': upload_preset,
+            'folder': 'soko-safi'
+        }
+        
+        # Upload to Cloudinary
+        response = requests.post(upload_url, files=files, data=data)
+        
+        if response.status_code == 200:
+            result = response.json()
+            return jsonify({
+                'message': 'File uploaded successfully',
+                'url': result['secure_url'],
+                'public_id': result['public_id']
+            }), 200
+        else:
+            return jsonify({'error': 'Upload failed'}), 500
+            
+    except Exception as e:
+        return jsonify({'error': 'Upload failed'}), 500

@@ -338,14 +338,10 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
-    uploadImage: (file) => {
-      const formData = new FormData();
-      formData.append('file', file);
-      return apiRequest('/upload/image', {
-        method: 'POST',
-        body: formData,
-        headers: {}, // Let browser set Content-Type for FormData
-      });
+    uploadImage: async (file) => {
+      // Use Cloudinary directly for profile pictures
+      const { uploadToCloudinary } = await import('./cloudinary');
+      return uploadToCloudinary(file);
     },
   },
 
@@ -380,14 +376,9 @@ export const api = {
   // Upload endpoints
   upload: {
     image: async (file) => {
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      return apiRequest('/upload/image', {
-        method: 'POST',
-        body: formData,
-        headers: {}, // Let browser set Content-Type for FormData
-      });
+      // Use Cloudinary directly for better performance
+      const { uploadToCloudinary } = await import('./cloudinary');
+      return uploadToCloudinary(file);
     },
   },
 };
