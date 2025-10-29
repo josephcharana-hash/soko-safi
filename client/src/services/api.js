@@ -4,11 +4,13 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 const apiRequest = async (endpoint, options = {}) => {
   try {
     const url = `${API_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+    console.log(`[API] Making request to: ${url}`);
     
     const config = {
       method: 'GET',
       headers: options.headers || {},
       credentials: import.meta.env.VITE_API_CREDENTIALS || 'include',
+      timeout: 10000, // 10 second timeout
       ...options
     };
     
@@ -18,6 +20,7 @@ const apiRequest = async (endpoint, options = {}) => {
     }
 
     const response = await fetch(url, config);
+    console.log(`[API] Response status: ${response.status}`);
     
     // Handle non-JSON responses
     const contentType = response.headers.get('content-type');
@@ -44,7 +47,14 @@ const apiRequest = async (endpoint, options = {}) => {
 
     return data;
   } catch (error) {
-    console.error(`API Error [${endpoint}]:`, error);
+    console.error(`[API] Error for ${endpoint}:`, error.message);
+    
+    // Check if it's a network error
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      console.warn(`[API] Network error - backend may be unavailable`);
+      throw new Error('Backend server is currently unavailable. Please try again later.');
+    }
+    
     throw error;
   }
 };
@@ -73,10 +83,17 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(credentials),
     }),
-    register: (userData) => apiRequest('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(userData),
-    }),
+    register: async (userData) => {
+      try {
+        return await apiRequest('/auth/register', {
+          method: 'POST',
+          body: JSON.stringify(userData),
+        });
+      } catch (error) {
+        console.error('[AUTH] Registration failed:', error.message);
+        throw error;
+      }
+    },
     logout: () => apiRequest('/auth/logout', { method: 'POST' }),
     getSession: () => apiRequest('/auth/session'),
     getProfile: () => apiRequest('/auth/profile'),
