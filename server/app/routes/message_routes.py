@@ -169,7 +169,7 @@ class MessageConversationsResource(Resource):
                 partner = User.query.get(partner_id)
                 conversation_partners[partner_id] = {
                     'partner_id': partner_id,
-                    'partner_name': partner.name if partner and partner.name else f"{partner.first_name} {partner.last_name}".strip() if partner else 'Unknown User',
+                    'partner_name': partner.full_name if partner else 'Unknown User',
                     'partner_email': partner.email if partner else '',
                     'last_message': msg.message,
                     'timestamp': msg.timestamp.isoformat() if msg.timestamp else None,
