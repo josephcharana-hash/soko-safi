@@ -172,6 +172,7 @@ const ArtisanDashboard = () => {
     
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0]
+      setSelectedFile(file)
       const reader = new FileReader()
       reader.onload = (e) => {
         setUploadedImage(e.target.result)
@@ -180,9 +181,12 @@ const ArtisanDashboard = () => {
     }
   }
 
+  const [selectedFile, setSelectedFile] = useState(null)
+
   const handleFileInput = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0]
+      setSelectedFile(file)
       const reader = new FileReader()
       reader.onload = (e) => {
         setUploadedImage(e.target.result)
@@ -203,20 +207,29 @@ const ArtisanDashboard = () => {
     
     try {
       setLoading(true)
-      const productData = {
-        title: formData.title,
-        description: formData.description,
-        price: parseFloat(formData.price),
-        stock: 10, // Default stock
-        currency: 'USD'
+      
+      // Create FormData for file upload
+      const formDataToSend = new FormData()
+      formDataToSend.append('title', formData.title)
+      formDataToSend.append('description', formData.description)
+      formDataToSend.append('price', parseFloat(formData.price))
+      formDataToSend.append('category', formData.category)
+      formDataToSend.append('subcategory', formData.subcategory)
+      formDataToSend.append('stock', 10)
+      formDataToSend.append('currency', 'KSH')
+      
+      // Add image if uploaded
+      if (selectedFile) {
+        formDataToSend.append('image', selectedFile)
       }
       
-      await api.products.create(productData)
+      await api.products.create(formDataToSend)
       await loadProducts() // Reload products
       
       setShowAddProduct(false)
       setFormData({ title: '', category: '', subcategory: '', description: '', price: '' })
       setUploadedImage(null)
+      setSelectedFile(null)
       
       alert('Product added successfully!')
     } catch (error) {

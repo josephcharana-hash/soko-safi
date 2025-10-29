@@ -13,14 +13,32 @@ export const CartProvider = ({ children }) => {
   }, [])
 
   useEffect(() => {
-    setCartCount(cartItems.reduce((sum, item) => sum + item.quantity, 0))
+    if (Array.isArray(cartItems)) {
+      setCartCount(cartItems.reduce((sum, item) => sum + item.quantity, 0))
+    } else {
+      setCartCount(0)
+    }
   }, [cartItems])
 
   const loadCart = async () => {
     try {
       setLoading(true)
       const cart = await api.cart.get()
-      setCartItems(cart || [])
+      console.log('Loading cart, received:', cart)
+      
+      // Handle different response formats from backend
+      if (Array.isArray(cart)) {
+        setCartItems(cart)
+      } else if (cart && Array.isArray(cart.items)) {
+        setCartItems(cart.items)
+      } else if (cart && Array.isArray(cart.cart_items)) {
+        setCartItems(cart.cart_items)
+      } else if (cart && cart.data && Array.isArray(cart.data)) {
+        setCartItems(cart.data)
+      } else {
+        console.log('Cart format not recognized, setting empty:', cart)
+        setCartItems([])
+      }
     } catch (error) {
       console.error('Failed to load cart:', error)
       setCartItems([])
@@ -32,23 +50,28 @@ export const CartProvider = ({ children }) => {
   const addToCart = async (productId, quantity = 1) => {
     try {
       await api.cart.add(productId, quantity)
-      await loadCart() // Refresh cart
+      await loadCart() // Reload the cart from the server
       return true
     } catch (error) {
       console.error('Failed to add to cart:', error)
-      throw error
+      // even if it fails, we can try to load the cart to sync
+      await loadCart()
+      return false // return false because the add operation failed
     }
   }
 
   const updateQuantity = async (itemId, quantity) => {
     try {
       await api.cart.update(itemId, quantity)
-      setCartItems(cartItems.map(item => 
+      // Optimistically update UI
+      setCartItems(prev => prev.map(item => 
         item.id === itemId ? { ...item, quantity } : item
       ))
       return true
     } catch (error) {
       console.error('Failed to update quantity:', error)
+      // Reload cart on error to sync with server
+      await loadCart()
       throw error
     }
   }
@@ -56,10 +79,13 @@ export const CartProvider = ({ children }) => {
   const removeFromCart = async (itemId) => {
     try {
       await api.cart.remove(itemId)
-      setCartItems(cartItems.filter(item => item.id !== itemId))
+      // Optimistically update UI
+      setCartItems(prev => prev.filter(item => item.id !== itemId))
       return true
     } catch (error) {
       console.error('Failed to remove from cart:', error)
+      // Reload cart on error to sync with server
+      await loadCart()
       throw error
     }
   }
@@ -76,6 +102,7 @@ export const CartProvider = ({ children }) => {
   }
 
   const getCartTotal = () => {
+    if (!Array.isArray(cartItems)) return 0
     return cartItems.reduce((sum, item) => {
       const price = typeof item.price === 'string' ? parseFloat(item.price) : item.price
       return sum + (price * item.quantity)

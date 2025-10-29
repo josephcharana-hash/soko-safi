@@ -7,10 +7,12 @@ import LazyImage from '../Components/LazyImage'
 import LoadingSpinner from '../Components/LoadingSpinner'
 import ReviewModal from '../Components/ReviewModal'
 import { api } from '../services/api'
+import { useCart } from '../hooks/useCart'
 
 const ProductDetailPage = () => {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { addToCart } = useCart()
   const [quantity, setQuantity] = useState(1)
   const [activeImage, setActiveImage] = useState(0)
   const [selectedSize, setSelectedSize] = useState('')
@@ -20,6 +22,8 @@ const ProductDetailPage = () => {
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [addingToCart, setAddingToCart] = useState(false)
+  const [buyingNow, setBuyingNow] = useState(false)
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -134,21 +138,43 @@ const ProductDetailPage = () => {
 
   const handleAddToCart = async () => {
     try {
-      await api.cart.add(product.id, quantity)
+      setAddingToCart(true)
+      const productId = product.id || id
+      if (!productId) {
+        throw new Error('Product ID not found')
+      }
+      await addToCart(productId, quantity)
       alert(`Added ${quantity} ${product.title} to cart!`)
     } catch (error) {
       console.error('Failed to add to cart:', error)
-      alert('Failed to add item to cart. Please try again.')
+      alert(error.message || 'Failed to add item to cart. Please try again.')
+    } finally {
+      setAddingToCart(false)
     }
   }
 
   const handleBuyNow = async () => {
     try {
-      await api.cart.add(product.id, quantity)
+      setBuyingNow(true)
+      
+      // Ensure we have a valid product ID
+      const productId = product.id || id
+      if (!productId) {
+        throw new Error('Product ID not found')
+      }
+      
+      console.log('Buy now - adding to cart:', { productId, quantity })
+      await addToCart(productId, quantity)
+      
+      // Navigate to checkout immediately
       navigate('/checkout')
+      
     } catch (error) {
-      console.error('Failed to add to cart:', error)
-      alert('Failed to add item to cart. Please try again.')
+      console.error('Failed to add to cart for buy now:', error)
+      const errorMessage = error.message || 'Failed to add item to cart. Please try again.'
+      alert(errorMessage)
+    } finally {
+      setBuyingNow(false)
     }
   }
 
@@ -429,20 +455,38 @@ const ProductDetailPage = () => {
                 <div className="space-y-3">
                   <button
                     onClick={handleBuyNow}
-                    disabled={!productWithDefaults.inStock}
+                    disabled={!productWithDefaults.inStock || buyingNow}
                     className="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                   >
-                    <span>Buy Now</span>
-                    <span className="text-lg">•</span>
-                    <span>KSh {(product.price * quantity).toLocaleString()}</span>
+                    {buyingNow ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Processing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Buy Now</span>
+                        <span className="text-lg">•</span>
+                        <span>KSh {(product.price * quantity).toLocaleString()}</span>
+                      </>
+                    )}
                   </button>
                   <button
                     onClick={handleAddToCart}
-                    disabled={!productWithDefaults.inStock}
+                    disabled={!productWithDefaults.inStock || addingToCart}
                     className="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 font-semibold py-4 px-6 rounded-xl transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                   >
-                    <ShoppingCart className="w-5 h-5" />
-                    <span>Add to Cart</span>
+                    {addingToCart ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-gray-600 border-t-transparent rounded-full animate-spin"></div>
+                        <span>Adding...</span>
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingCart className="w-5 h-5" />
+                        <span>Add to Cart</span>
+                      </>
+                    )}
                   </button>
                   <button
                     onClick={handleMessageArtisan}

@@ -35,16 +35,22 @@ const CartPage = () => {
   }
 
   const subtotal = cartItems.reduce((sum, item) => {
-    const price = typeof item.price === 'string' ? parseFloat(item.price) : item.price
-    return sum + (price * item.quantity)
+    const price = item.product?.price || item.price || 0
+    const numPrice = typeof price === 'string' ? parseFloat(price) : price
+    const validPrice = isNaN(numPrice) ? 0 : numPrice
+    return sum + (validPrice * item.quantity)
   }, 0)
   const shipping = 150.00 // KSH 150 shipping
   const tax = subtotal * 0.16 // 16% VAT in Kenya
   const total = subtotal + shipping + tax
 
   const handleCheckout = () => {
-    navigate("/checkout");
-  };
+    if (cartItems.length === 0) {
+      alert('Your cart is empty')
+      return
+    }
+    navigate("/checkout")
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -92,6 +98,9 @@ const CartPage = () => {
                           src={item.product?.image || item.image || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=100&h=100&fit=crop'} 
                           alt={item.product?.title || item.title}
                           className="w-24 h-24 rounded-lg object-cover"
+                          onError={(e) => {
+                            e.target.src = 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=100&h=100&fit=crop'
+                          }}
                         />
                       </Link>
                       <div className="flex-1">
@@ -135,7 +144,12 @@ const CartPage = () => {
                             </button>
                           </div>
                           <p className="text-xl font-bold text-gray-900">
-                            KSH {((typeof item.price === 'string' ? parseFloat(item.price) : item.price) * item.quantity).toFixed(2)}
+                            KSH {(() => {
+                              const price = item.product?.price || item.price || 0
+                              const numPrice = typeof price === 'string' ? parseFloat(price) : price
+                              const validPrice = isNaN(numPrice) ? 0 : numPrice
+                              return (validPrice * item.quantity).toFixed(2)
+                            })()}
                           </p>
                         </div>
                       </div>

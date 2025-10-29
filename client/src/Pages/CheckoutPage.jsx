@@ -33,8 +33,10 @@ const CheckoutPage = () => {
   }, [cartItems, loading, navigate])
 
   const subtotal = cartItems.reduce((sum, item) => {
-    const price = typeof item.price === 'string' ? parseFloat(item.price) : item.price
-    return sum + (price * item.quantity)
+    const price = item.product?.price || item.price || 0
+    const numPrice = typeof price === 'string' ? parseFloat(price) : price
+    const validPrice = isNaN(numPrice) ? 0 : numPrice
+    return sum + (validPrice * item.quantity)
   }, 0)
   const shipping = 150.00 // KSH 150 shipping
   const tax = subtotal * 0.16 // 16% VAT in Kenya
@@ -522,12 +524,20 @@ const CheckoutPage = () => {
                           src={item.product?.image || item.image || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=100&h=100&fit=crop'} 
                           alt={item.product?.title || item.title}
                           className="w-16 h-16 rounded-lg object-cover"
+                          onError={(e) => {
+                            e.target.src = 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=100&h=100&fit=crop'
+                          }}
                         />
                         <div className="flex-1">
                           <p className="font-medium text-gray-900 text-sm">{item.product?.title || item.title}</p>
                           <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
                         </div>
-                        <p className="font-bold text-gray-900">KSH {(price * item.quantity).toFixed(2)}</p>
+                        <p className="font-bold text-gray-900">KSH {(() => {
+                          const price = item.product?.price || item.price || 0
+                          const numPrice = typeof price === 'string' ? parseFloat(price) : price
+                          const validPrice = isNaN(numPrice) ? 0 : numPrice
+                          return (validPrice * item.quantity).toFixed(2)
+                        })()}</p>
                       </div>
                     )
                   })}
