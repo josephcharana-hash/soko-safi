@@ -38,12 +38,15 @@ class RegisterResource(Resource):
     
     def post(self):
         try:
+            print(f"[REGISTER] Request received from {request.remote_addr}")
             data = request.get_json()
+            print(f"[REGISTER] Request data: {data}")
             
             # Validate required fields
             required_fields = ['email', 'password', 'full_name', 'role']
             for field in required_fields:
                 if not data.get(field):
+                    print(f"[REGISTER] Missing field: {field}")
                     return {
                         'error': 'Missing required field',
                         'message': f'{field} is required'
@@ -55,36 +58,45 @@ class RegisterResource(Resource):
             role = data['role'].strip().lower()
             
             # Validate email format
+            print(f"[REGISTER] Validating email: {email}")
             if not validate_email(email):
+                print(f"[REGISTER] Invalid email format: {email}")
                 return {
                     'error': 'Invalid email format',
                     'message': 'Please provide a valid email address'
                 }, 400
             
             # Validate password strength
+            print(f"[REGISTER] Validating password strength")
             is_valid_password, password_message = validate_password(password)
             if not is_valid_password:
+                print(f"[REGISTER] Weak password: {password_message}")
                 return {
                     'error': 'Weak password',
                     'message': password_message
                 }, 400
             
             # Validate role
+            print(f"[REGISTER] Validating role: {role}")
             if role not in ['buyer', 'artisan']:
+                print(f"[REGISTER] Invalid role: {role}")
                 return {
                     'error': 'Invalid role',
                     'message': 'Role must be either "buyer" or "artisan"'
                 }, 400
             
             # Check if user already exists
+            print(f"[REGISTER] Checking if user exists: {email}")
             existing_user = User.query.filter_by(email=email, deleted_at=None).first()
             if existing_user:
+                print(f"[REGISTER] User already exists: {email}")
                 return {
                     'error': 'User already exists',
                     'message': 'An account with this email already exists'
                 }, 409
             
             # Create new user
+            print(f"[REGISTER] Creating new user: {email}")
             user = User(
                 email=email,
                 password_hash=hash_password(password),
@@ -95,12 +107,16 @@ class RegisterResource(Resource):
                 is_verified=False
             )
             
+            print(f"[REGISTER] Saving user to database")
             db.session.add(user)
             db.session.commit()
+            print(f"[REGISTER] User saved with ID: {user.id}")
             
             # Log in the user automatically after registration
+            print(f"[REGISTER] Logging in user: {user.id}")
             login_user(user.id, user.role.value)
             
+            print(f"[REGISTER] Registration successful for: {email}")
             return {
                 'message': 'User registered successfully',
                 'user': {
@@ -113,10 +129,12 @@ class RegisterResource(Resource):
             }, 201
             
         except Exception as e:
+            print(f"[REGISTER] Registration failed with error: {str(e)}")
+            print(f"[REGISTER] Error type: {type(e).__name__}")
             db.session.rollback()
             return {
                 'error': 'Registration failed',
-                'message': 'An error occurred during registration'
+                'message': f'An error occurred during registration: {str(e)}'
             }, 500
 
 class LoginResource(Resource):
@@ -128,10 +146,13 @@ class LoginResource(Resource):
     
     def post(self):
         try:
+            print(f"[LOGIN] Request received from {request.remote_addr}")
             data = request.get_json()
+            print(f"[LOGIN] Request data received (email only): {data.get('email') if data else 'No data'}")
             
             # Validate required fields
             if not data.get('email') or not data.get('password'):
+                print(f"[LOGIN] Missing credentials")
                 return {
                     'error': 'Missing credentials',
                     'message': 'Email and password are required'
@@ -139,19 +160,32 @@ class LoginResource(Resource):
             
             email = data['email'].strip().lower()
             password = data['password']
+            print(f"[LOGIN] Attempting login for: {email}")
             
             # Find user by email
+            print(f"[LOGIN] Looking up user in database")
             user = User.query.filter_by(email=email, deleted_at=None).first()
             
-            if not user or not verify_password(password, user.password_hash):
+            if not user:
+                print(f"[LOGIN] User not found: {email}")
+                return {
+                    'error': 'Invalid credentials',
+                    'message': 'Email or password is incorrect'
+                }, 401
+            
+            print(f"[LOGIN] User found, verifying password")
+            if not verify_password(password, user.password_hash):
+                print(f"[LOGIN] Invalid password for: {email}")
                 return {
                     'error': 'Invalid credentials',
                     'message': 'Email or password is incorrect'
                 }, 401
             
             # Log in the user
+            print(f"[LOGIN] Password verified, logging in user: {user.id}")
             login_user(user.id, user.role.value)
             
+            print(f"[LOGIN] Login successful for: {email}")
             return {
                 'message': 'Login successful',
                 'user': {
@@ -164,9 +198,11 @@ class LoginResource(Resource):
             }, 200
             
         except Exception as e:
+            print(f"[LOGIN] Login failed with error: {str(e)}")
+            print(f"[LOGIN] Error type: {type(e).__name__}")
             return {
                 'error': 'Login failed',
-                'message': 'An error occurred during login'
+                'message': f'An error occurred during login: {str(e)}'
             }, 500
 
 class LogoutResource(Resource):

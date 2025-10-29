@@ -273,15 +273,16 @@ const ArtisanDashboard = () => {
                 <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center shadow-lg overflow-hidden">
                   {profileData.profile_picture_url ? (
                     <img
-                      src={profileData.profile_picture_url}
+                      src={profileData.profile_picture_url.startsWith('http') ? profileData.profile_picture_url : ''}
                       alt="Profile"
                       className="w-full h-full object-cover"
+                      onError={(e) => { e.target.style.display = 'none'; }}
                     />
                   ) : (
                     <User className="w-5 h-5 text-white" />
                   )}
                 </div>
-                <span className="font-semibold hidden sm:block">{profileData.full_name || 'Artisan'}</span>
+                <span className="font-semibold hidden sm:block">{(profileData.full_name || 'Artisan').replace(/[<>"'&]/g, '')}</span>
               </button>
             </div>
           </div>
