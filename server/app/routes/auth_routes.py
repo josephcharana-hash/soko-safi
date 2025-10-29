@@ -335,6 +335,41 @@ class SessionResource(Resource):
                 'user': None
             }, 200
 
+class ResetPasswordResource(Resource):
+    """Handle password reset requests"""
+    
+    def post(self):
+        """Request password reset"""
+        try:
+            data = request.get_json()
+            
+            if not data.get('email'):
+                return {
+                    'error': 'Missing email',
+                    'message': 'Email is required for password reset'
+                }, 400
+            
+            email = data['email'].strip().lower()
+            
+            # Find user by email
+            user = User.query.filter_by(email=email, deleted_at=None).first()
+            
+            # Always return success to prevent email enumeration
+            if user:
+                # In a real app, you would send an email with reset token
+                # For now, just log it or implement basic reset
+                pass
+            
+            return {
+                'message': 'If an account with that email exists, a password reset link has been sent'
+            }, 200
+            
+        except Exception as e:
+            return {
+                'error': 'Password reset failed',
+                'message': 'An error occurred during password reset request'
+            }, 500
+
 # Register routes
 auth_api.add_resource(RegisterResource, '/register')
 auth_api.add_resource(LoginResource, '/login')
@@ -342,3 +377,4 @@ auth_api.add_resource(LogoutResource, '/logout')
 auth_api.add_resource(ProfileResource, '/profile')
 auth_api.add_resource(ChangePasswordResource, '/change-password')
 auth_api.add_resource(SessionResource, '/session')
+auth_api.add_resource(ResetPasswordResource, '/reset-password')

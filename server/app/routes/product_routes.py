@@ -24,17 +24,24 @@ class ProductListResource(Resource):
     @require_role('artisan', 'admin')
     def post(self):
         """Create new product - Artisan or Admin only"""
-        data = request.json
-        from flask import session
-        
-        # Set artisan_id to current user if not admin
-        if session.get('user_role') != 'admin':
-            data['artisan_id'] = session.get('user_id')
-        
-        product = Product(**data)
-        db.session.add(product)
-        db.session.commit()
-        return {'id': product.id}, 201
+        try:
+            data = request.json
+            if not data:
+                return {'error': 'No data provided'}, 400
+            
+            from flask import session
+            
+            # Set artisan_id to current user if not admin
+            if session.get('user_role') != 'admin':
+                data['artisan_id'] = session.get('user_id')
+            
+            product = Product(**data)
+            db.session.add(product)
+            db.session.commit()
+            return {'id': product.id}, 201
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to create product'}, 500
 
 class ProductResource(Resource):
     def get(self, product_id):

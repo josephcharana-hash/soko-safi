@@ -18,6 +18,8 @@ def create_app():
     flask_app.config['SESSION_KEY_PREFIX'] = 'soko_safi:'
     flask_app.config['SESSION_FILE_DIR'] = os.path.join(os.getcwd(), 'instance', 'sessions')
     flask_app.config['SESSION_FILE_THRESHOLD'] = 500
+    flask_app.config['UPLOAD_FOLDER'] = os.path.join(flask_app.root_path, 'uploads')
+    flask_app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
     
     # Initialize extensions
     db.init_app(flask_app)
@@ -53,6 +55,8 @@ def create_app():
     from app.routes.follow_routes import follow_bp
     from app.routes.notification_routes import notification_bp
     from app.routes.artisan_routes import artisan_bp
+    from app.routes.upload_routes import upload_bp
+    from app.routes.collection_routes import collection_bp
     
     flask_app.register_blueprint(auth_bp, url_prefix='/api/auth')
     flask_app.register_blueprint(user_bp, url_prefix='/api/users')
@@ -67,6 +71,8 @@ def create_app():
     flask_app.register_blueprint(follow_bp, url_prefix='/api/follows')
     flask_app.register_blueprint(notification_bp, url_prefix='/api/notifications')
     flask_app.register_blueprint(artisan_bp, url_prefix='/api/artisan')
+    flask_app.register_blueprint(upload_bp, url_prefix='/api/upload')
+    flask_app.register_blueprint(collection_bp, url_prefix='/api/collections')
     
     # Routes
     @flask_app.route('/')

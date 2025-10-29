@@ -10,7 +10,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-@upload_bp.route('/upload', methods=['POST'])
+@upload_bp.route('/image', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
         return jsonify({'error': 'No file provided'}), 400
@@ -27,7 +27,11 @@ def upload_file():
     ext = file.filename.rsplit('.', 1)[1].lower()
     filename = f"{uuid.uuid4()}.{ext}"
     
-    filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+    # Create uploads directory if it doesn't exist
+    upload_folder = os.path.join(current_app.root_path, 'uploads')
+    os.makedirs(upload_folder, exist_ok=True)
+    
+    filepath = os.path.join(upload_folder, filename)
     file.save(filepath)
     
     # Return URL to access the file
