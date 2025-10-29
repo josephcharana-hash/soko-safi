@@ -119,13 +119,11 @@ class CartItemListResource(Resource):
                 'cart_id': ci.cart_id,
                 'product_id': ci.product_id,
                 'quantity': ci.quantity,
-                'price': float(product.price) if product and product.price else 0,
+                'price': float(ci.unit_price) if ci.unit_price else 0,
                 'product': {
                     'id': product.id if product else None,
                     'title': product.title if product else 'Unknown Product',
-                    'price': float(product.price) if product and product.price else 0,
-                    'image': product.image if product else None,
-                    'artisan_name': product.artisan_name if product else None
+                    'price': float(product.price) if product and product.price else 0
                 } if product else None,
                 'created_at': ci.added_at.isoformat() if ci.added_at else None
             })
@@ -136,11 +134,17 @@ class CartItemListResource(Resource):
     def post(self):
         """Add item to cart - Authenticated users only"""
         from flask import session
+        from app.models import Product
         data = request.json
         
         current_user_id = session.get('user_id')
         product_id = data.get('product_id')
         quantity = data.get('quantity', 1)
+        
+        # Get product to validate existence and get price
+        product = Product.query.get(product_id)
+        if not product:
+            return {'error': 'Product not found'}, 404
         
         # Get or create user's cart
         cart = Cart.query.filter_by(user_id=current_user_id).first()
@@ -165,7 +169,8 @@ class CartItemListResource(Resource):
             cart_item = CartItem(
                 cart_id=cart.id,
                 product_id=product_id,
-                quantity=quantity
+                quantity=quantity,
+                unit_price=product.price
             )
             db.session.add(cart_item)
             db.session.commit()
@@ -198,6 +203,7 @@ class CartItemResource(Resource):
             'cart_id': cart_item.cart_id,
             'product_id': cart_item.product_id,
             'quantity': cart_item.quantity,
+            'unit_price': float(cart_item.unit_price) if cart_item.unit_price else 0,
             'created_at': cart_item.created_at.isoformat() if cart_item.created_at else None
         }
     
@@ -218,7 +224,13 @@ class CartItemResource(Resource):
         if 'quantity' in data:
             cart_item.quantity = data['quantity']
         if 'product_id' in data:
+            # If product is changed, update unit_price as well
+            from app.models import Product
+            product = Product.query.get(data['product_id'])
+            if not product:
+                return {'error': 'Product not found'}, 404
             cart_item.product_id = data['product_id']
+            cart_item.unit_price = product.price
         
         db.session.commit()
         
@@ -228,7 +240,8 @@ class CartItemResource(Resource):
                 'id': cart_item.id,
                 'cart_id': cart_item.cart_id,
                 'product_id': cart_item.product_id,
-                'quantity': cart_item.quantity
+                'quantity': cart_item.quantity,
+                'unit_price': float(cart_item.unit_price) if cart_item.unit_price else 0
             }
         }, 200
     

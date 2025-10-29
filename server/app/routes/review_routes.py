@@ -20,7 +20,7 @@ class ReviewListResource(Resource):
             'product_id': r.product_id,
             'user_id': r.user_id,
             'rating': r.rating,
-            'comment': r.comment,
+            'comment': r.body,
             'created_at': r.created_at.isoformat() if r.created_at else None,
             'updated_at': r.updated_at.isoformat() if r.updated_at else None
         } for r in reviews]
@@ -35,7 +35,14 @@ class ReviewListResource(Resource):
         if session.get('user_role') != 'admin':
             data['user_id'] = session.get('user_id')
         
-        review = Review(**data)
+        new_review = {
+            'product_id': data.get('product_id'),
+            'user_id': data.get('user_id'),
+            'rating': data.get('rating'),
+            'body': data.get('comment')
+        }
+        
+        review = Review(**new_review)
         db.session.add(review)
         db.session.commit()
         
@@ -46,7 +53,7 @@ class ReviewListResource(Resource):
                 'product_id': review.product_id,
                 'user_id': review.user_id,
                 'rating': review.rating,
-                'comment': review.comment
+                'comment': review.body
             }
         }, 201
 
@@ -59,7 +66,7 @@ class ReviewResource(Resource):
             'product_id': review.product_id,
             'user_id': review.user_id,
             'rating': review.rating,
-            'comment': review.comment,
+            'comment': review.body,
             'created_at': review.created_at.isoformat() if review.created_at else None,
             'updated_at': review.updated_at.isoformat() if review.updated_at else None
         }
@@ -73,7 +80,7 @@ class ReviewResource(Resource):
         if 'rating' in data:
             review.rating = data['rating']
         if 'comment' in data:
-            review.comment = data['comment']
+            review.body = data['comment']
         if 'user_id' in data and session.get('user_role') == 'admin':
             review.user_id = data['user_id']
         if 'product_id' in data and session.get('user_role') == 'admin':
@@ -88,7 +95,7 @@ class ReviewResource(Resource):
                 'product_id': review.product_id,
                 'user_id': review.user_id,
                 'rating': review.rating,
-                'comment': review.comment
+                'comment': review.body
             }
         }, 200
     
