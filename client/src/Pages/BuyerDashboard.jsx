@@ -448,42 +448,7 @@ const BuyerDashboard = () => {
                   </div>
                 )}
 
-                {/* Recent Activity Section */}
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Recent Activity</h2>
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl">
-                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                        <ShoppingBag className="w-5 h-5 text-green-600" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-gray-900">Order completed</p>
-                        <p className="text-sm text-gray-600">Ceramic vase delivery confirmed</p>
-                      </div>
-                      <span className="text-sm text-gray-500">2 hours ago</span>
-                    </div>
-                    <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <MessageSquare className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-gray-900">New message</p>
-                        <p className="text-sm text-gray-600">Sarah Johnson replied to your inquiry</p>
-                      </div>
-                      <span className="text-sm text-gray-500">5 hours ago</span>
-                    </div>
-                    <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl">
-                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                        <Heart className="w-5 h-5 text-purple-600" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-gray-900">Added to favorites</p>
-                        <p className="text-sm text-gray-600">Wooden bowl added to your collection</p>
-                      </div>
-                      <span className="text-sm text-gray-500">1 day ago</span>
-                    </div>
-                  </div>
-                </div>
+
               </>
             )}
 
