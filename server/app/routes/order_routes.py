@@ -42,7 +42,7 @@ class OrderListResource(Resource):
             enhanced_order = {
                 'id': order.id,
                 'user_id': order.user_id,
-                'user_name': user.name if user and user.name else f"{user.first_name} {user.last_name}".strip() if user else 'Unknown User',
+                'user_name': user.full_name if user else 'Unknown User',
                 'user_email': user.email if user else '',
                 'status': order.status.value if order.status else 'pending',
                 'total_amount': float(order.total_amount) if order.total_amount else 0,

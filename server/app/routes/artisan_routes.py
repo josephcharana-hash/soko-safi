@@ -315,7 +315,7 @@ class ArtisanOrdersResource(Resource):
                 order_dict[order.id] = {
                     'id': order.id,
                     'user_id': order.user_id,
-                    'user_name': user.name if user.name else f"{user.first_name} {user.last_name}".strip(),
+                    'user_name': user.full_name or 'Unknown User',
                     'user_email': user.email,
                     'status': order.status.value if order.status else 'pending',
                     'total_amount': float(order.total_amount) if order.total_amount else 0,
@@ -352,12 +352,33 @@ class ArtisanMessagesResource(Resource):
         return [{
             'id': msg.id,
             'sender_id': msg.sender_id,
-            'sender_name': user.name if user.name else f"{user.first_name} {user.last_name}".strip(),
+            'sender_name': user.full_name or 'Unknown User',
             'sender_email': user.email,
             'message': msg.message,
             'timestamp': msg.timestamp.isoformat() if msg.timestamp else None,
             'is_read': msg.is_read
         } for msg, user in messages]
+
+class ArtisanProductsResource(Resource):
+    def get(self, artisan_id):
+        """Get products by artisan ID - Public access"""
+        from app.models import Product
+        
+        products = Product.query.filter_by(artisan_id=artisan_id, deleted_at=None).all()
+        
+        return [{
+            'id': product.id,
+            'title': product.title,
+            'description': product.description,
+            'price': float(product.price) if product.price else 0,
+            'currency': product.currency or 'KSH',
+            'stock': product.stock or 0,
+            'image': product.image_url,
+            'category': product.category.name if product.category else None,
+            'subcategory': product.subcategory.name if product.subcategory else None,
+            'status': product.status,
+            'created_at': product.created_at.isoformat() if product.created_at else None
+        } for product in products]
 
 # Register routes
 artisan_api.add_resource(ArtisanShowcaseMediaListResource, '/showcase/')
@@ -367,3 +388,4 @@ artisan_api.add_resource(ArtisanSocialResource, '/social/<social_link_id>')
 artisan_api.add_resource(ArtisanDashboardResource, '/dashboard')
 artisan_api.add_resource(ArtisanOrdersResource, '/orders')
 artisan_api.add_resource(ArtisanMessagesResource, '/messages')
+artisan_api.add_resource(ArtisanProductsResource, '/<artisan_id>/products')

@@ -27,10 +27,32 @@ class Product(db.Model):
     price = db.Column(db.Numeric(12, 2), nullable=False)
     currency = db.Column(db.String(3))
     stock = db.Column(db.Integer)
+    image = db.Column(db.Text)  # Main product image URL
+    status = db.Column(db.String(50), default='active')
     meta_data = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     deleted_at = db.Column(db.DateTime)
+    
+    # Relationships
+    category = db.relationship('Category', backref='products')
+    subcategory = db.relationship('Subcategory', backref='products')
+    images = db.relationship('ProductImage', backref='product', lazy='dynamic')
+    
+    @property
+    def image_url(self):
+        """Get main image URL, fallback to first ProductImage"""
+        if self.image:
+            return self.image
+        first_image = self.images.first()
+        return first_image.url if first_image else None
+    
+    @property
+    def artisan_name(self):
+        """Get artisan name from User model"""
+        from .user import User
+        artisan = User.query.get(self.artisan_id)
+        return artisan.full_name if artisan else 'Unknown Artisan'
 
 class ProductImage(db.Model):
     __tablename__ = "product_images"

@@ -14,11 +14,16 @@ class ProductListResource(Resource):
             return [{
                 'id': p.id,
                 'artisan_id': p.artisan_id,
+                'artisan_name': p.artisan_name,
                 'title': p.title,
                 'price': float(p.price) if p.price else 0,
                 'description': p.description,
                 'stock': p.stock,
-                'currency': p.currency,
+                'currency': p.currency or 'KSH',
+                'image': p.image_url,
+                'status': p.status or 'active',
+                'category': p.category.name if p.category else None,
+                'subcategory': p.subcategory.name if p.subcategory else None,
                 'created_at': p.created_at.isoformat() if p.created_at else None
             } for p in products]
         except Exception as e:
@@ -54,11 +59,16 @@ class ProductResource(Resource):
             return {
                 'id': product.id,
                 'artisan_id': product.artisan_id,
+                'artisan_name': product.artisan_name,
                 'title': product.title,
                 'price': float(product.price) if product.price else 0,
                 'description': product.description,
                 'stock': product.stock,
-                'currency': product.currency,
+                'currency': product.currency or 'KSH',
+                'image': product.image_url,
+                'status': product.status or 'active',
+                'category': product.category.name if product.category else None,
+                'subcategory': product.subcategory.name if product.subcategory else None,
                 'created_at': product.created_at.isoformat() if product.created_at else None
             }
         except Exception as e:
