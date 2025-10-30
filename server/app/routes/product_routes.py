@@ -85,11 +85,22 @@ class ProductListResource(Resource):
                 currency=data.get('currency', 'KSH'),
                 category_id=category_id,
                 subcategory_id=subcategory_id,
-                image=image_url,
                 status='active'
             )
             
             db.session.add(product)
+            db.session.flush()  # Get product ID
+            
+            # Add image if provided
+            if image_url:
+                from app.models.product import ProductImage
+                product_image = ProductImage(
+                    product_id=product.id,
+                    url=image_url,
+                    position=1
+                )
+                db.session.add(product_image)
+            
             db.session.commit()
             
             return {

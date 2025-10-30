@@ -27,7 +27,7 @@ class Product(db.Model):
     price = db.Column(db.Numeric(12, 2), nullable=False)
     currency = db.Column(db.String(3))
     stock = db.Column(db.Integer)
-    image = db.Column(db.Text)  # Main product image URL
+    # image = db.Column(db.Text)  # Main product image URL - Column doesn't exist in DB
     status = db.Column(db.String(50), default='active')
     meta_data = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -41,11 +41,14 @@ class Product(db.Model):
     
     @property
     def image_url(self):
-        """Get main image URL, fallback to first ProductImage"""
-        if self.image:
-            return self.image
+        """Get main image URL from first ProductImage"""
         first_image = self.images.first()
         return first_image.url if first_image else None
+    
+    @property
+    def image(self):
+        """Alias for image_url for backward compatibility"""
+        return self.image_url
     
     @property
     def artisan_name(self):
