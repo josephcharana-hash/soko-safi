@@ -127,8 +127,8 @@ export const AuthProvider = ({ children }) => {
     checkAuth,
     clearError,
     isAuthenticated: !!user,
-    isArtisan: user?.role === 'artisan',
-    isBuyer: user?.role === 'buyer',
+    isArtisan: user?.role?.toLowerCase() === 'artisan',
+    isBuyer: user?.role?.toLowerCase() === 'buyer',
   };
 
   return (

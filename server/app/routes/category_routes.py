@@ -39,17 +39,22 @@ class CategoryListResource(Resource):
             description=data.get('description', '').strip()
         )
         
-        db.session.add(category)
-        db.session.commit()
-        
-        return {
-            'message': 'Category created successfully',
-            'category': {
-                'id': category.id,
-                'name': category.name,
-                'description': category.description
-            }
-        }, 201
+        try:
+            db.session.add(category)
+            db.session.commit()
+
+            return {
+                'message': 'Category created successfully',
+                'category': {
+                    'id': category.id,
+                    'name': category.name,
+                    'description': category.description
+                }
+            }, 201
+        except Exception as e:
+            db.session.rollback()
+            print(f"[CategoryListResource] Error creating category: {str(e)}")
+            return {'error': 'Failed to create category', 'message': str(e)}, 500
 
 class CategoryResource(Resource):
     def get(self, category_id):

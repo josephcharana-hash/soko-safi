@@ -58,22 +58,25 @@ const ArtisanDashboard = () => {
     try {
       setDashboardLoading(true)
       setError(null)
+      
+      // Check authentication first
+      const session = await api.auth.getSession()
+      if (!session.authenticated) {
+        setError('Please log in to view your dashboard.')
+        return
+      }
+      
       const dashboardData = await api.artisan.getDashboard()
-      console.log('Dashboard data received:', dashboardData)
       if (dashboardData && dashboardData.stats) {
         setDashboardStats(dashboardData.stats)
       } else {
-        // Set default empty stats for new artisans
         setDashboardStats({ total_products: 0, total_orders: 0, total_revenue: 0 })
       }
     } catch (error) {
       console.error('Failed to load dashboard data:', error)
-      // For new artisans or when backend fails, show empty state instead of error
       setDashboardStats({ total_products: 0, total_orders: 0, total_revenue: 0 })
-      if (error.message.includes('Please log in')) {
+      if (error.message.includes('Authentication')) {
         setError('Please log in to view your dashboard.')
-      } else {
-        console.warn('Dashboard endpoint failed, showing empty state for new artisan')
       }
     } finally {
       setDashboardLoading(false)
@@ -83,9 +86,8 @@ const ArtisanDashboard = () => {
   const loadProducts = async () => {
     try {
       setLoading(true)
-      // Get only the artisan's own products
       const products = await api.artisan.getProducts(user?.id)
-      setMyProducts(products || [])
+      setMyProducts(Array.isArray(products) ? products : [])
     } catch (error) {
       console.error('Failed to load products:', error)
       setMyProducts([])
@@ -232,14 +234,26 @@ const ArtisanDashboard = () => {
     try {
       setLoading(true)
       
+      // Check authentication first
+      const session = await api.auth.getSession()
+      if (!session.authenticated) {
+        alert('Please log in to add products')
+        return
+      }
+      
       let imageUrl = null
       
       // Upload image to Cloudinary if selected
       if (selectedFile) {
-        imageUrl = await uploadToCloudinary(selectedFile)
+        try {
+          imageUrl = await uploadToCloudinary(selectedFile)
+        } catch (error) {
+          console.error('Image upload failed:', error)
+          alert('Image upload failed, but product will be created without image')
+        }
       }
       
-      // Create product data
+      // Create product data object
       const productData = {
         title: formData.title,
         description: formData.description,
@@ -247,10 +261,15 @@ const ArtisanDashboard = () => {
         category: formData.category,
         subcategory: formData.subcategory,
         stock: 10,
-        currency: 'KSH',
-        image: imageUrl
+        currency: 'KSH'
       }
-      
+
+      // Add image URL if uploaded
+      if (imageUrl) {
+        productData.image = imageUrl
+      }
+
+      console.log('Creating product with data:', productData)
       await api.products.create(productData)
       await loadProducts() // Reload products
       
@@ -261,7 +280,12 @@ const ArtisanDashboard = () => {
       
       alert('Product added successfully!')
     } catch (error) {
-      alert('Failed to add product: ' + error.message)
+      console.error('Product creation failed:', error)
+      if (error.message.includes('Authentication')) {
+        alert('Please log in to add products')
+      } else {
+        alert('Failed to add product: ' + error.message)
+      }
     } finally {
       setLoading(false)
     }

@@ -239,11 +239,9 @@ const BuyerDashboard = () => {
     return url
   }
 
-  const fallbackImage = (w = 200, h = 200) => `https://picsum.photos/${w}/${h}?random=${Math.floor(Math.random() * 10000)}`
-
   const safeSrc = (url, w = 200, h = 200) => {
     const formatted = ensureUnsplashFormat(url)
-    return formatted || fallbackImage(w, h)
+    return formatted || '/images/placeholder.jpg'
   }
 
   // Show loading while checking authentication
@@ -464,7 +462,7 @@ const BuyerDashboard = () => {
                             <div className="flex items-start space-x-6">
                               <div className="relative">
                                 <img
-                                  src={safeSrc(order.image || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=200&h=200&fit=crop')}
+                                  src={safeSrc(order.image)}
                                   alt={order.title || order.product}
                                   className="w-24 h-24 rounded-xl object-cover shadow-md"
                                 />
@@ -652,7 +650,7 @@ const BuyerDashboard = () => {
                       >
                         <div className="aspect-square overflow-hidden relative">
                           <img
-                            src={safeSrc(favorite.product?.image || favorite.image || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop', 400, 400)}
+                            src={safeSrc(favorite.product?.image || favorite.image, 400, 400)}
                             alt={favorite.product?.title || favorite.title}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                           />

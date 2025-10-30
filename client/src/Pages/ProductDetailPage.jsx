@@ -86,6 +86,8 @@ const ProductDetailPage = () => {
     subcategory: product.subcategory || "Art",
     inStock: product.stock > 0,
     stockCount: product.stock || 0,
+    tags: product.tags || [],
+    relatedProducts: product.relatedProducts || [],
     artisan: {
       id: product.artisan_id || 1,
       name: product.artisan_name || "Master Artisan",

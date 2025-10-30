@@ -1,73 +1,46 @@
-const API_URL = import.meta.env.VITE_API_URL ;
+const API_URL = import.meta.env.VITE_API_URL;
 
 // API request helper with comprehensive error handling
 const apiRequest = async (endpoint, options = {}) => {
   try {
     const url = `${API_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
-    console.log(`[API] Making ${options.method || 'GET'} request to: ${url}`);
     
     const config = {
       method: 'GET',
-      headers: options.headers || {},
-      credentials: 'include', // Always include credentials for session-based auth
-      timeout: 10000, // 10 second timeout
+      headers: {
+        'Accept': 'application/json',
+        ...options.headers
+      },
+      credentials: 'include', // Essential for Flask session cookies
       ...options
     };
     
-    // Only set Content-Type for non-FormData requests
-    if (!(options.body instanceof FormData) && !config.headers['Content-Type']) {
-      config.headers['Content-Type'] = 'application/json';
-    }
-
-    // Log request details for debugging
-    if (options.body && config.method !== 'GET') {
-      console.log(`[API] Request body:`, options.body instanceof FormData ? 'FormData' : options.body);
+    // Always set Content-Type for non-GET requests unless it's FormData
+    if (config.method !== 'GET') {
+      if (!(options.body instanceof FormData)) {
+        config.headers['Content-Type'] = 'application/json';
+      }
     }
 
     const response = await fetch(url, config);
-    console.log(`[API] Response status: ${response.status} for ${endpoint}`);
     
-    // Handle non-JSON responses
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      if (!response.ok) {
-        // For DELETE requests, 500 errors might still mean success
-        if (config.method === 'DELETE' && response.status === 500) {
-          return { success: true, message: 'Deleted' };
-        }
-        throw new Error(`Server error: ${response.status} ${response.statusText}`);
-      }
-      return { success: true };
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      data = { message: response.statusText };
     }
-
-    const data = await response.json();
-    console.log(`[API] Response data for ${endpoint}:`, data);
     
     if (!response.ok) {
-      // For DELETE requests, treat 500 errors as success silently
-      if (config.method === 'DELETE' && response.status === 500) {
-        return { success: true, message: 'Deleted' };
-      }
-      
-      // Handle authentication errors
       if (response.status === 401) {
-        console.warn('[API] Authentication required');
-        throw new Error('Please log in to continue');
+        throw new Error('Authentication required');
       }
-      
-      throw new Error(data.message || data.error || `HTTP ${response.status}`);
+      throw new Error(data.error || data.message || `HTTP ${response.status}`);
     }
 
     return data;
   } catch (error) {
     console.error(`[API] Error for ${endpoint}:`, error.message);
-    
-    // Check if it's a network error
-    if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      console.warn(`[API] Network error - backend may be unavailable`);
-      throw new Error('Backend server is currently unavailable. Please try again later.');
-    }
-    
     throw error;
   }
 };
@@ -80,7 +53,7 @@ const enhanceProduct = (product) => {
     price: typeof product.price === 'string' ? parseFloat(product.price) : product.price,
     stock: typeof product.stock === 'string' ? parseInt(product.stock) : product.stock,
     currency: product.currency || 'KSh',
-    image: product.image || `https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop&crop=center`,
+    image: product.image || '/images/placeholder.jpg',
     artisan_name: product.artisan_name || 'Unknown Artisan',
     location: product.location || 'Kenya',
     rating: product.rating || 4.5,
@@ -92,10 +65,16 @@ const enhanceProduct = (product) => {
 export const api = {
   // Authentication endpoints
   auth: {
-    login: (credentials) => apiRequest('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(credentials),
-    }),
+    login: async (credentials) => {
+      try {
+        return await apiRequest('/auth/login', {
+          method: 'POST',
+          body: JSON.stringify(credentials),
+        });
+      } catch (error) {
+        throw new Error(error.message || 'Login failed');
+      }
+    },
     register: async (userData) => {
       try {
         return await apiRequest('/auth/register', {
@@ -103,26 +82,42 @@ export const api = {
           body: JSON.stringify(userData),
         });
       } catch (error) {
-        console.error('[AUTH] Registration failed:', error.message);
-        throw error;
+        throw new Error(error.message || 'Registration failed');
       }
     },
-    logout: () => apiRequest('/auth/logout', { method: 'POST' }),
-    getSession: async () => {
-      console.log('[API] Checking session...');
-      const result = await apiRequest('/auth/session');
-      console.log('[API] Session result:', result);
-      return result;
+    logout: async () => {
+      try {
+        return await apiRequest('/auth/logout', { method: 'POST' });
+      } catch (error) {
+        return { success: true }; // Always succeed locally
+      }
     },
-    getProfile: () => apiRequest('/auth/profile'),
-    updateProfile: (data) => apiRequest('/auth/profile', {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    }),
-    changePassword: (data) => apiRequest('/auth/change-password', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
+    getSession: async () => {
+      try {
+        return await apiRequest('/auth/session');
+      } catch (error) {
+        return { authenticated: false };
+      }
+    },
+    getProfile: async () => {
+      try {
+        const result = await apiRequest('/auth/profile');
+        return result.user || result;
+      } catch (error) {
+        throw new Error('Failed to load profile');
+      }
+    },
+    updateProfile: async (data) => {
+      try {
+        const result = await apiRequest('/auth/profile', {
+          method: 'PUT',
+          body: JSON.stringify(data),
+        });
+        return result.user || result;
+      } catch (error) {
+        throw new Error('Failed to update profile');
+      }
+    },
   },
 
   // User management endpoints
@@ -138,23 +133,50 @@ export const api = {
   // Product endpoints
   products: {
     getAll: async (params) => {
-      const query = params ? '?' + new URLSearchParams(params).toString() : '';
-      const products = await apiRequest(`/products/${query}`);
-      return Array.isArray(products) ? products.map(enhanceProduct) : [];
+      try {
+        const query = params ? '?' + new URLSearchParams(params).toString() : '';
+        const products = await apiRequest(`/products/${query}`);
+        return Array.isArray(products) ? products.map(enhanceProduct) : [];
+      } catch (error) {
+        console.warn('Products getAll failed:', error.message);
+        return [];
+      }
     },
     getById: async (id) => {
-      const product = await apiRequest(`/products/${id}`);
-      return enhanceProduct(product);
+      try {
+        const product = await apiRequest(`/products/${id}`);
+        return enhanceProduct(product);
+      } catch (error) {
+        throw new Error('Product not found');
+      }
     },
-    create: (data) => apiRequest('/products/', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-    update: (id, data) => apiRequest(`/products/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    }),
-    delete: (id) => apiRequest(`/products/${id}`, { method: 'DELETE' }),
+    create: async (data) => {
+      try {
+        return await apiRequest('/products/', {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      } catch (error) {
+        throw new Error(error.message || 'Failed to create product');
+      }
+    },
+    update: async (id, data) => {
+      try {
+        return await apiRequest(`/products/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(data),
+        });
+      } catch (error) {
+        throw new Error('Failed to update product');
+      }
+    },
+    delete: async (id) => {
+      try {
+        return await apiRequest(`/products/${id}`, { method: 'DELETE' });
+      } catch (error) {
+        throw new Error('Failed to delete product');
+      }
+    },
   },
 
   // Category endpoints
@@ -204,52 +226,88 @@ export const api = {
   // Cart endpoints
   cart: {
     get: async () => {
-      const result = await apiRequest('/cart/')
-      console.log('Cart get result:', result)
-      // Backend returns array of cart items directly
-      return { items: result, cart_items: result }
+      try {
+        const result = await apiRequest('/cart/');
+        return Array.isArray(result) ? result : [];
+      } catch (error) {
+        console.warn('Cart get failed:', error.message);
+        return [];
+      }
     },
     add: async (productId, quantity = 1) => {
-      console.log('API: Adding to cart', { productId, quantity })
-      console.log('API: Request payload:', { product_id: productId, quantity })
-      const result = await apiRequest('/cart/', {
-        method: 'POST',
-        body: JSON.stringify({ product_id: productId, quantity }),
-      })
-      console.log('API: Cart add successful', result)
-      return result
+      try {
+        return await apiRequest('/cart/', {
+          method: 'POST',
+          body: JSON.stringify({ product_id: productId, quantity }),
+        });
+      } catch (error) {
+        throw new Error(error.message || 'Failed to add to cart');
+      }
     },
-    update: (itemId, quantity) => apiRequest(`/cart/${itemId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ quantity }),
-    }),
-    remove: (itemId) => apiRequest(`/cart/${itemId}`, { method: 'DELETE' }),
-    clear: () => apiRequest('/cart/clear', { method: 'DELETE' }),
+    update: async (itemId, quantity) => {
+      try {
+        return await apiRequest(`/cart/${itemId}`, {
+          method: 'PUT',
+          body: JSON.stringify({ quantity }),
+        });
+      } catch (error) {
+        throw new Error('Failed to update cart item');
+      }
+    },
+    remove: async (itemId) => {
+      try {
+        return await apiRequest(`/cart/${itemId}`, { method: 'DELETE' });
+      } catch (error) {
+        throw new Error('Failed to remove cart item');
+      }
+    },
+    clear: async () => {
+      try {
+        return await apiRequest('/cart/clear', { method: 'DELETE' });
+      } catch (error) {
+        throw new Error('Failed to clear cart');
+      }
+    },
   },
 
   // Order endpoints
   orders: {
     getAll: async () => {
       try {
-        return await apiRequest('/orders/')
+        const orders = await apiRequest('/orders/');
+        return Array.isArray(orders) ? orders : [];
       } catch (error) {
-        console.warn('Orders failed:', error.message)
-        return []
+        console.warn('Orders failed:', error.message);
+        return [];
       }
     },
-    getById: (id) => apiRequest(`/orders/${id}`),
-    create: (orderData) => apiRequest('/orders/', {
-      method: 'POST',
-      body: JSON.stringify(orderData),
-    }),
-    createItem: (itemData) => apiRequest('/orders/items/', {
-      method: 'POST',
-      body: JSON.stringify(itemData),
-    }),
-    updateStatus: (id, status) => apiRequest(`/orders/${id}/status`, {
-      method: 'PUT',
-      body: JSON.stringify({ status }),
-    }),
+    getById: async (id) => {
+      try {
+        return await apiRequest(`/orders/${id}`);
+      } catch (error) {
+        throw new Error('Order not found');
+      }
+    },
+    create: async (orderData) => {
+      try {
+        return await apiRequest('/orders/', {
+          method: 'POST',
+          body: JSON.stringify(orderData),
+        });
+      } catch (error) {
+        throw new Error(error.message || 'Failed to create order');
+      }
+    },
+    updateStatus: async (id, status) => {
+      try {
+        return await apiRequest(`/orders/${id}/status`, {
+          method: 'PUT',
+          body: JSON.stringify({ status }),
+        });
+      } catch (error) {
+        throw new Error('Failed to update order status');
+      }
+    },
   },
 
   // Review endpoints
@@ -349,34 +407,50 @@ export const api = {
 
   // Artisan endpoints
   artisan: {
-    getProfile: (id) => apiRequest(`/artisan/${id}`),
-    getProducts: (id) => apiRequest(`/artisan/${id}/products`),
-    updateProfile: (data) => apiRequest('/artisan/profile', {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    }),
+    getProfile: async (id) => {
+      try {
+        return await apiRequest(`/artisan/${id}`);
+      } catch (error) {
+        throw new Error('Artisan profile not found');
+      }
+    },
+    getProducts: async (id) => {
+      try {
+        const products = await apiRequest(`/artisan/${id}/products`);
+        return Array.isArray(products) ? products : [];
+      } catch (error) {
+        console.warn('Artisan products failed:', error.message);
+        return [];
+      }
+    },
     getDashboard: async () => {
       try {
-        return await apiRequest('/artisan/dashboard')
+        return await apiRequest('/artisan/dashboard');
       } catch (error) {
-        console.warn('Artisan dashboard failed:', error.message)
-        return { stats: { total_products: 0, total_orders: 0, total_revenue: 0 } }
+        console.warn('Artisan dashboard failed:', error.message);
+        return { 
+          stats: { total_products: 0, total_orders: 0, total_revenue: 0 },
+          products: [],
+          orders: []
+        };
       }
     },
     getOrders: async () => {
       try {
-        return await apiRequest('/artisan/orders')
+        const orders = await apiRequest('/artisan/orders');
+        return Array.isArray(orders) ? orders : [];
       } catch (error) {
-        console.warn('Artisan orders failed:', error.message)
-        return []
+        console.warn('Artisan orders failed:', error.message);
+        return [];
       }
     },
     getMessages: async () => {
       try {
-        return await apiRequest('/artisan/messages')
+        const messages = await apiRequest('/artisan/messages');
+        return Array.isArray(messages) ? messages : [];
       } catch (error) {
-        console.warn('Artisan messages failed:', error.message)
-        return []
+        console.warn('Artisan messages failed:', error.message);
+        return [];
       }
     },
   },

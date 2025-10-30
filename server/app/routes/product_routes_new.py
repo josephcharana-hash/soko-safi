@@ -8,9 +8,9 @@ product_api = Api(product_bp)
 
 class ProductListResource(Resource):
     def get(self):
-        """Get all products"""
         try:
             products = Product.query.filter_by(status='active').all()
+            print(f"Found {len(products)} products in database")
             return [{
                 'id': p.id,
                 'title': p.title,
@@ -21,11 +21,11 @@ class ProductListResource(Resource):
                 'currency': p.currency,
                 'status': p.status
             } for p in products]
-        except Exception:
+        except Exception as e:
+            print(f"Error fetching products: {e}")
             return []
     
     def post(self):
-        """Create new product"""
         try:
             if request.is_json:
                 data = request.json or {}
@@ -70,7 +70,6 @@ class ProductListResource(Resource):
 
 class ProductResource(Resource):
     def get(self, product_id):
-        """Get product details"""
         try:
             product = Product.query.get(product_id)
             if not product:
@@ -90,7 +89,6 @@ class ProductResource(Resource):
             return {'error': 'Product not found'}, 404
     
     def put(self, product_id):
-        """Update product"""
         try:
             product = Product.query.get(product_id)
             if not product:
@@ -115,7 +113,6 @@ class ProductResource(Resource):
             return {'error': 'Failed to update product'}, 500
     
     def delete(self, product_id):
-        """Delete product"""
         try:
             product = Product.query.get(product_id)
             if not product:

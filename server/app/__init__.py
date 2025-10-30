@@ -52,7 +52,7 @@ def create_app():
     # Register route blueprints
     from app.routes.auth_routes import auth_bp
     from app.routes.user_routes import user_bp
-    from app.routes.product_routes import product_bp
+    from app.routes.product_routes_new import product_bp
     from app.routes.cart_routes import cart_bp
     from app.routes.category_routes import category_bp
     from app.routes.order_routes import order_bp
