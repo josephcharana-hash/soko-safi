@@ -1,66 +1,3 @@
-<<<<<<< HEAD
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Diamond, Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
-import Navbar from "../Components/Layout/Navbar";
-import Footer from "../Components/Layout/Footer";
-
-const CartPage = () => {
-  const navigate = useNavigate();
-  const [cartItems, setCartItems] = useState([
-    {
-      id: 1,
-      productId: 1,
-      title: "Ceramic Vase",
-      artisan: "Sarah Johnson",
-      price: 45.0,
-      quantity: 1,
-      image:
-        "https://images.unsplash.com/photo-1578500494198-246f612d3b3d?w=100&h=100&fit=crop",
-    },
-    {
-      id: 2,
-      productId: 2,
-      title: "Wood Carving",
-      artisan: "John Smith",
-      price: 120.0,
-      quantity: 2,
-      image:
-        "https://images.unsplash.com/photo-1551522435-a13afa10f103?w=100&h=100&fit=crop",
-    },
-    {
-      id: 3,
-      productId: 3,
-      title: "Textile Art",
-      artisan: "Maria Garcia",
-      price: 85.0,
-      quantity: 1,
-      image:
-        "https://images.unsplash.com/photo-1558769132-cb1aea3c8565?w=100&h=100&fit=crop",
-    },
-  ]);
-
-  const updateQuantity = (id, newQuantity) => {
-    if (newQuantity < 1) return;
-    setCartItems(
-      cartItems.map((item) =>
-        item.id === id ? { ...item, quantity: newQuantity } : item
-      )
-    );
-  };
-
-  const removeItem = (id) => {
-    setCartItems(cartItems.filter((item) => item.id !== id));
-  };
-
-  const subtotal = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
-  const shipping = 10.0;
-  const tax = subtotal * 0.1;
-  const total = subtotal + shipping + tax;
-=======
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Trash2, Plus, Minus, ShoppingBag, Loader } from 'lucide-react'
@@ -75,7 +12,6 @@ const CartPage = () => {
 
   const handleUpdateQuantity = async (id, newQuantity) => {
     if (newQuantity < 1) return
-    
     try {
       setUpdating(prev => ({ ...prev, [id]: true }))
       await updateQuantity(id, newQuantity)
@@ -101,14 +37,14 @@ const CartPage = () => {
     const price = typeof item.price === 'string' ? parseFloat(item.price) : item.price
     return sum + (price * item.quantity)
   }, 0)
+
   const shipping = 150.00 // KSH 150 shipping
-  const tax = subtotal * 0.16 // 16% VAT in Kenya
+  const tax = subtotal * 0.16 // 16% VAT
   const total = subtotal + shipping + tax
->>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
 
   const handleCheckout = () => {
-    navigate("/checkout");
-  };
+    navigate('/checkout')
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -134,10 +70,7 @@ const CartPage = () => {
               <p className="text-gray-600 mb-6">
                 Add some beautiful handcrafted items to get started!
               </p>
-              <Link
-                to="/explore"
-                className="btn-primary inline-block px-6 py-3"
-              >
+              <Link to="/explore" className="btn-primary inline-block px-6 py-3">
                 Explore Products
               </Link>
             </div>
@@ -146,92 +79,77 @@ const CartPage = () => {
               {/* Cart Items */}
               <div className="lg:col-span-2 space-y-4">
                 {cartItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="bg-white rounded-xl shadow-sm p-6"
-                  >
+                  <div key={item.id} className="bg-white rounded-xl shadow-sm p-6">
                     <div className="flex items-start space-x-4">
-<<<<<<< HEAD
-                      <Link to={`/product/${item.productId}`}>
-                        <img
-                          src={item.image}
-                          alt={item.title}
-=======
                       <Link to={`/product/${item.product_id || item.productId}`}>
-                        <img 
-                          src={item.product?.image || item.image || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=100&h=100&fit=crop'} 
+                        <img
+                          src={
+                            item.product?.image ||
+                            item.image ||
+                            'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=100&h=100&fit=crop'
+                          }
                           alt={item.product?.title || item.title}
->>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
                           className="w-24 h-24 rounded-lg object-cover"
                         />
                       </Link>
+
                       <div className="flex-1">
                         <div className="flex items-start justify-between mb-2">
                           <div>
-<<<<<<< HEAD
                             <Link
-                              to={`/product/${item.productId}`}
-=======
-                            <Link 
                               to={`/product/${item.product_id || item.productId}`}
->>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
                               className="text-lg font-bold text-gray-900 hover:text-primary"
                             >
                               {item.product?.title || item.title}
                             </Link>
-<<<<<<< HEAD
                             <p className="text-sm text-gray-600">
-                              by {item.artisan}
+                              by {item.product?.artisan_name || item.artisan || 'Unknown Artisan'}
                             </p>
-=======
-                            <p className="text-sm text-gray-600">by {item.product?.artisan_name || item.artisan || 'Unknown Artisan'}</p>
->>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
                           </div>
+
                           <button
                             onClick={() => handleRemoveItem(item.id)}
                             disabled={updating[item.id]}
                             className="p-2 text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
                           >
-                            {updating[item.id] ? <Loader className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
+                            {updating[item.id] ? (
+                              <Loader className="w-5 h-5 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-5 h-5" />
+                            )}
                           </button>
                         </div>
 
                         <div className="flex items-center justify-between mt-4">
                           <div className="flex items-center space-x-3">
                             <button
-<<<<<<< HEAD
-                              onClick={() =>
-                                updateQuantity(item.id, item.quantity - 1)
-                              }
-                              className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50"
-=======
                               onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
                               disabled={updating[item.id] || item.quantity <= 1}
                               className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50"
->>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
                             >
                               <Minus className="w-4 h-4" />
                             </button>
+
                             <span className="text-lg font-medium w-8 text-center">
                               {item.quantity}
                             </span>
+
                             <button
-<<<<<<< HEAD
-                              onClick={() =>
-                                updateQuantity(item.id, item.quantity + 1)
-                              }
-                              className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50"
-=======
                               onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
                               disabled={updating[item.id]}
                               className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50"
->>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
                             >
                               <Plus className="w-4 h-4" />
                             </button>
                           </div>
+
                           <p className="text-xl font-bold text-gray-900">
-                            KSH {((typeof item.price === 'string' ? parseFloat(item.price) : item.price) * item.quantity).toFixed(2)}
+                            KSH{' '}
+                            {(
+                              (typeof item.price === 'string'
+                                ? parseFloat(item.price)
+                                : item.price) * item.quantity
+                            ).toFixed(2)}
                           </p>
                         </div>
                       </div>
@@ -243,56 +161,32 @@ const CartPage = () => {
               {/* Order Summary */}
               <div className="lg:col-span-1">
                 <div className="bg-white rounded-xl shadow-sm p-6 sticky top-8">
-                  <h2 className="text-xl font-bold text-gray-900 mb-6">
-                    Order Summary
-                  </h2>
+                  <h2 className="text-xl font-bold text-gray-900 mb-6">Order Summary</h2>
 
                   <div className="space-y-3 mb-6">
                     <div className="flex items-center justify-between text-gray-700">
                       <span>Subtotal ({cartItems.length} items)</span>
-<<<<<<< HEAD
-                      <span className="font-medium">
-                        ${subtotal.toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-gray-700">
-                      <span>Shipping</span>
-                      <span className="font-medium">
-                        ${shipping.toFixed(2)}
-                      </span>
-=======
                       <span className="font-medium">KSH {subtotal.toFixed(2)}</span>
                     </div>
                     <div className="flex items-center justify-between text-gray-700">
                       <span>Shipping</span>
                       <span className="font-medium">KSH {shipping.toFixed(2)}</span>
->>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
                     </div>
                     <div className="flex items-center justify-between text-gray-700">
-                      <span>Tax</span>
+                      <span>Tax (16%)</span>
                       <span className="font-medium">KSH {tax.toFixed(2)}</span>
                     </div>
                     <div className="border-t border-gray-200 pt-3 mt-3">
                       <div className="flex items-center justify-between">
-<<<<<<< HEAD
-                        <span className="text-lg font-bold text-gray-900">
-                          Total
-                        </span>
-                        <span className="text-2xl font-bold text-gray-900">
-                          ${total.toFixed(2)}
-                        </span>
-=======
                         <span className="text-lg font-bold text-gray-900">Total</span>
-                        <span className="text-2xl font-bold text-gray-900">KSH {total.toFixed(2)}</span>
->>>>>>> c528bbd7c7c448457de4473c0be34a9199288a97
+                        <span className="text-2xl font-bold text-gray-900">
+                          KSH {total.toFixed(2)}
+                        </span>
                       </div>
                     </div>
                   </div>
 
-                  <button
-                    onClick={handleCheckout}
-                    className="w-full btn-primary py-3 text-lg mb-4"
-                  >
+                  <button onClick={handleCheckout} className="w-full btn-primary py-3 text-lg mb-4">
                     Proceed to Checkout
                   </button>
 
@@ -330,7 +224,8 @@ const CartPage = () => {
 
       <Footer />
     </div>
-  );
-};
+  )
+}
 
-export default CartPage;
+export default CartPage
+
