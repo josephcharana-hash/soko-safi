@@ -52,7 +52,7 @@ const LoginPage = () => {
       } else if (userRole === 'admin') {
         navigate('/admin-dashboard', { replace: true })
       } else {
-        navigate('/', { replace: true }) // Redirect buyers to home
+        navigate('/buyer-dashboard', { replace: true })
       }
     } catch (error) {
       setErrors({ general: error.message || 'Login failed. Please check your credentials and try again.' })

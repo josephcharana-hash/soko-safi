@@ -78,7 +78,7 @@ const RegisterPage = () => {
       if (userType === 'artisan') {
         navigate('/artisan-dashboard', { replace: true })
       } else {
-        navigate('/', { replace: true }) // Redirect buyers to home
+        navigate('/buyer-dashboard', { replace: true })
       }
     } catch (error) {
       setErrors({ general: error.message || 'Registration failed. Please check your information and try again.' })

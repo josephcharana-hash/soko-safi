@@ -125,12 +125,6 @@ const Navbar = ({ showAuthButtons = true }) => {
                         <p className="text-xs text-gray-500">{user?.email}</p>
                       </div>
                       <Link
-                        to={isArtisan ? '/artisan-dashboard' : '/buyer-dashboard'}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Dashboard
-                      </Link>
-                      <Link
                         to="/profile"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       >
@@ -233,13 +227,7 @@ const Navbar = ({ showAuthButtons = true }) => {
                   <span>Messages</span>
                   <span className="w-2 h-2 bg-red-500 rounded-full"></span>
                 </Link>
-                <Link
-                  to={isArtisan ? '/artisan-dashboard' : '/buyer-dashboard'}
-                  className="block px-3 py-3 text-gray-700 hover:text-primary-600 font-medium rounded-lg hover:bg-gray-50 transition-colors"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Dashboard
-                </Link>
+
                 <button
                   onClick={() => {
                     logout()
