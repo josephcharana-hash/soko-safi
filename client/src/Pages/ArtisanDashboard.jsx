@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Diamond, Upload, Bell, User, Plus, Settings, Camera } from 'lucide-react'
+import { Diamond, Upload, Bell, User, Plus, Settings, Camera, Package, ShoppingBag, MessageSquare } from 'lucide-react'
 import { api } from '../services/api'
 import { uploadToCloudinary } from '../services/cloudinary'
 import { useAuth } from '../context/AuthContext'

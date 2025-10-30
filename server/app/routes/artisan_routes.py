@@ -373,7 +373,7 @@ class ArtisanProductsResource(Resource):
             'price': float(product.price) if product.price else 0,
             'currency': product.currency or 'KSH',
             'stock': product.stock or 0,
-            'image': product.image_url,
+            'image': product.image,
             'category': product.category.name if product.category else None,
             'subcategory': product.subcategory.name if product.subcategory else None,
             'status': product.status,

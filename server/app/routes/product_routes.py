@@ -20,7 +20,7 @@ class ProductListResource(Resource):
                 'description': p.description,
                 'stock': p.stock,
                 'currency': p.currency or 'KSH',
-                'image': p.image_url,
+                'image': p.image,
                 'status': p.status or 'active',
                 'category': p.category.name if p.category else None,
                 'subcategory': p.subcategory.name if p.subcategory else None,
@@ -98,7 +98,7 @@ class ProductListResource(Resource):
                     'id': product.id,
                     'title': product.title,
                     'price': float(product.price),
-                    'image': product.image_url,
+                    'image': product.image,
                     'status': product.status
                 }
             }, 201
@@ -121,7 +121,7 @@ class ProductResource(Resource):
                 'description': product.description,
                 'stock': product.stock,
                 'currency': product.currency or 'KSH',
-                'image': product.image_url,
+                'image': product.image,
                 'status': product.status or 'active',
                 'category': product.category.name if product.category else None,
                 'subcategory': product.subcategory.name if product.subcategory else None,
