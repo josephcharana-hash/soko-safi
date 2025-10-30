@@ -330,3 +330,5 @@ class ClearCartResource(Resource):
 cart_api.add_resource(CartItemListResource, '/')
 cart_api.add_resource(CartItemResource, '/<cart_item_id>')
 cart_api.add_resource(ClearCartResource, '/clear')
+cart_api.add_resource(CartListResource, '/carts')
+cart_api.add_resource(CartResource, '/carts/<cart_id>')

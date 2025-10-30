@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Trash2, Plus, Minus, ShoppingBag, Loader } from 'lucide-react'
-import Navbar from '../Components/Layout/Navbar'
-import Footer from '../Components/Layout/Footer'
+import DashboardNavbar from '../Components/Layout/DashboardNavbar'
+import BuyerSidebar from '../Components/Layout/BuyerSidebar'
 import { useCart } from '../hooks/useCart.jsx'
+import { useAuth } from '../context/AuthContext'
 
 const CartPage = () => {
   const navigate = useNavigate()
+  const { user, isAuthenticated, isBuyer, logout } = useAuth()
   const { cartItems, loading, updateQuantity, removeFromCart } = useCart()
   const [updating, setUpdating] = useState({})
 
@@ -52,12 +54,30 @@ const CartPage = () => {
     navigate("/checkout")
   }
 
-  return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar />
+  // Show loading while checking authentication
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Authentication Required</h2>
+          <p className="text-gray-600 mb-6">Please log in to view your cart.</p>
+          <Link to="/login" className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors">
+            Go to Login
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
-      <main className="flex-1">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <DashboardNavbar />
+      <div className="flex flex-col lg:flex-row">
+        <BuyerSidebar />
+
+        {/* Main Content */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 animate-fade-in">
+          <div className="max-w-7xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-900 mb-8">
             Shopping Cart
           </h1>
@@ -76,7 +96,7 @@ const CartPage = () => {
               <p className="text-gray-600 mb-6">
                 Add some beautiful handcrafted items to get started!
               </p>
-              <Link to="/explore" className="btn-primary inline-block px-6 py-3">
+              <Link to="/buyer-dashboard?tab=explore" className="btn-primary inline-block px-6 py-3">
                 Explore Products
               </Link>
             </div>
@@ -196,7 +216,7 @@ const CartPage = () => {
                   </button>
 
                   <Link
-                    to="/explore"
+                    to="/buyer-dashboard?tab=explore"
                     className="block text-center text-primary hover:text-primary-hover font-medium"
                   >
                     Continue Shopping
@@ -224,10 +244,9 @@ const CartPage = () => {
               </div>
             </div>
           )}
-        </div>
-      </main>
-
-      <Footer />
+          </div>
+        </main>
+      </div>
     </div>
   )
 }

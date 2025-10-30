@@ -1,11 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { Diamond, Send, User, ArrowLeft, Paperclip, Image as ImageIcon, Loader, Check, CheckCheck, Download } from 'lucide-react'
+import { Send, Paperclip, Image as ImageIcon, Loader, Check, CheckCheck, Download } from 'lucide-react'
+import DashboardNavbar from '../Components/Layout/DashboardNavbar'
+import BuyerSidebar from '../Components/Layout/BuyerSidebar'
 import { api } from '../services/api'
+import { useAuth } from '../context/AuthContext'
 
 const MessagesPage = () => {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { isAuthenticated } = useAuth()
   const [messageText, setMessageText] = useState('')
   const [selectedConversation, setSelectedConversation] = useState(id ? parseInt(id) : null)
   const [conversations, setConversations] = useState([])
@@ -216,26 +220,29 @@ const MessagesPage = () => {
     }
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link to="/" className="flex items-center space-x-2">
-              <Diamond className="w-6 h-6 text-primary" fill="currentColor" />
-              <span className="text-xl font-bold text-gray-900">SokoDigital</span>
-            </Link>
-            
-            <Link to="/buyer-dashboard" className="text-gray-600 hover:text-gray-900 font-medium">
-              Back to Dashboard
-            </Link>
-          </div>
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Authentication Required</h2>
+          <p className="text-gray-600 mb-6">Please log in to view your messages.</p>
+          <Link to="/login" className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors">
+            Go to Login
+          </Link>
         </div>
-      </nav>
+      </div>
+    )
+  }
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden h-[600px] md:h-[calc(100vh-200px)]">
-          <div className="flex h-full flex-col md:flex-row">
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <DashboardNavbar />
+      <div className="flex flex-col lg:flex-row">
+        <BuyerSidebar />
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 animate-fade-in">
+          <div className="max-w-7xl mx-auto">
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden h-[600px] md:h-[calc(100vh-200px)]">
+              <div className="flex h-full flex-col md:flex-row">
             <div className="w-full md:w-80 border-b md:border-b-0 md:border-r border-gray-200 flex flex-col max-h-48 md:max-h-none">
               <div className="p-4 border-b border-gray-200 space-y-3">
                 <h2 className="text-xl font-bold text-gray-900">Messages</h2>
@@ -494,8 +501,10 @@ const MessagesPage = () => {
                 <p>Select a conversation to start messaging</p>
               </div>
             )}
+              </div>
+            </div>
           </div>
-        </div>
+        </main>
       </div>
     </div>
   )

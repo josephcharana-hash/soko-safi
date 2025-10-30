@@ -9,6 +9,7 @@ class Cart(db.Model):
     user_id = db.Column(db.String(36), db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    deleted_at = db.Column(db.DateTime)
     meta_data = db.Column(db.Text)
 
 class CartItem(db.Model):

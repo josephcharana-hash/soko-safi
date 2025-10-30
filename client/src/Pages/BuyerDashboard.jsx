@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { Diamond, LayoutDashboard, ShoppingBag, MessageSquare, Heart, Star, User, Bell, Package, CreditCard, Plus, Search, Filter, Grid, List, MapPin } from 'lucide-react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Star, Package, CreditCard, Plus, Search, Filter, Grid, List, MapPin, ShoppingBag, MessageSquare, Heart } from 'lucide-react'
 import ReviewModal from '../Components/ReviewModal'
 import LazyImage from '../Components/LazyImage'
+import DashboardNavbar from '../Components/Layout/DashboardNavbar'
+import BuyerSidebar from '../Components/Layout/BuyerSidebar'
 import { api } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 
 const BuyerDashboard = () => {
   const { user, isAuthenticated, isBuyer, logout } = useAuth()
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState('dashboard')
+  const [searchParams] = useSearchParams()
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'dashboard')
   const [reviewModal, setReviewModal] = useState({ isOpen: false, product: null })
 
   // State for API data
@@ -42,10 +45,17 @@ const BuyerDashboard = () => {
     if (isAuthenticated && user) {
       console.log('Loading buyer dashboard for user:', user)
       loadDashboardData()
+      
+      // Check URL parameter for tab
+      const tabParam = searchParams.get('tab')
+      if (tabParam === 'explore') {
+        setActiveTab('explore')
+        loadExploreData()
+      }
     } else {
       console.log('User not authenticated, skipping dashboard load')
     }
-  }, [isAuthenticated, user])
+  }, [isAuthenticated, user, searchParams])
 
   const loadDashboardData = async () => {
     try {
@@ -269,165 +279,22 @@ const BuyerDashboard = () => {
     )
   }
 
+  const handleSidebarClick = (tab) => {
+    setActiveTab(tab)
+    switch(tab) {
+      case 'orders': loadOrders(); break;
+      case 'messages': loadMessages(); break;
+      case 'collections': loadCollections(); break;
+      case 'explore': loadExploreData(); break;
+      case 'payments': loadPayments(); break;
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Top Navigation */}
-      <nav className="bg-white shadow-lg border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link to="/" className="flex items-center space-x-3 group">
-              <div className="p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl group-hover:scale-110 transition-transform duration-200">
-                <Diamond className="w-6 h-6 text-white" fill="currentColor" />
-              </div>
-              <span className="text-xl font-bold text-gray-900 group-hover:text-primary-600 transition-colors">SokoDigital</span>
-            </Link>
-
-            <div className="flex items-center space-x-4">
-              <button className="p-3 text-gray-600 hover:text-primary-600 rounded-xl hover:bg-primary-50 transition-all duration-200 hover:scale-110">
-                <Bell className="w-5 h-5" />
-              </button>
-              <div className="relative group">
-                <button className="flex items-center space-x-2 p-1.5 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors">
-                  <div className="w-9 h-9 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center shadow-sm">
-                    <User className="w-5 h-5 text-white" />
-                  </div>
-                </button>
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                  <div className="py-2">
-                    <div className="px-4 py-2 border-b border-gray-100">
-                      <p className="text-sm font-medium text-gray-900">{user?.full_name || user?.name || 'Buyer'}</p>
-                      <p className="text-xs text-gray-500">{user?.email}</p>
-                    </div>
-                    <Link
-                      to="/buyer-dashboard"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Dashboard
-                    </Link>
-                    <Link
-                      to="/profile"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Profile Settings
-                    </Link>
-                    <button
-                      onClick={() => {
-                        logout()
-                        navigate('/')
-                      }}
-                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
-                    >
-                      <span className="text-red-600">⏻</span>
-                      <span>Sign Out</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </nav>
-
+      <DashboardNavbar />
       <div className="flex flex-col lg:flex-row">
-        {/* Sidebar */}
-        <aside className="w-full lg:w-80 bg-gradient-to-b from-white to-gray-50 border-b lg:border-b-0 lg:border-r border-gray-200 shadow-lg">
-          <div className="p-6">
-            <div className="flex items-center space-x-3 mb-8">
-              <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Diamond className="w-7 h-7 text-white" fill="currentColor" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">Buyer Hub</h2>
-                <p className="text-sm text-gray-500">Manage your purchases</p>
-              </div>
-            </div>
-            <nav className="space-y-3">
-              <button
-                onClick={() => setActiveTab('dashboard')}
-                className={`w-full flex items-center space-x-4 px-5 py-4 rounded-xl transition-all duration-200 whitespace-nowrap group ${
-                  activeTab === 'dashboard'
-                    ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg transform scale-[1.02]'
-                    : 'text-gray-700 hover:bg-white hover:shadow-md hover:transform hover:scale-[1.01]'
-                }`}
-              >
-                <LayoutDashboard className={`w-6 h-6 transition-colors ${
-                  activeTab === 'dashboard' ? 'text-white' : 'text-primary-600 group-hover:text-primary-700'
-                }`} />
-                <span className="font-semibold text-lg">Dashboard</span>
-              </button>
-
-              <button
-                onClick={() => { setActiveTab('orders'); loadOrders(); }}
-                className={`w-full flex items-center space-x-4 px-5 py-4 rounded-xl transition-all duration-200 whitespace-nowrap group ${
-                  activeTab === 'orders'
-                    ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg transform scale-[1.02]'
-                    : 'text-gray-700 hover:bg-white hover:shadow-md hover:transform hover:scale-[1.01]'
-                }`}
-              >
-                <ShoppingBag className={`w-6 h-6 transition-colors ${
-                  activeTab === 'orders' ? 'text-white' : 'text-primary-600 group-hover:text-primary-700'
-                }`} />
-                <span className="font-semibold text-lg">My Orders</span>
-              </button>
-
-              <button
-                onClick={() => { setActiveTab('messages'); loadMessages(); }}
-                className={`w-full flex items-center space-x-4 px-5 py-4 rounded-xl transition-all duration-200 whitespace-nowrap group ${
-                  activeTab === 'messages'
-                    ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg transform scale-[1.02]'
-                    : 'text-gray-700 hover:bg-white hover:shadow-md hover:transform hover:scale-[1.01]'
-                }`}
-              >
-                <MessageSquare className={`w-6 h-6 transition-colors ${
-                  activeTab === 'messages' ? 'text-white' : 'text-primary-600 group-hover:text-primary-700'
-                }`} />
-                <span className="font-semibold text-lg">Messages</span>
-              </button>
-
-              <button
-                onClick={() => { setActiveTab('collections'); loadCollections(); }}
-                className={`w-full flex items-center space-x-4 px-5 py-4 rounded-xl transition-all duration-200 whitespace-nowrap group ${
-                  activeTab === 'collections'
-                    ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg transform scale-[1.02]'
-                    : 'text-gray-700 hover:bg-white hover:shadow-md hover:transform hover:scale-[1.01]'
-                }`}
-              >
-                <Heart className={`w-6 h-6 transition-colors ${
-                  activeTab === 'collections' ? 'text-white' : 'text-primary-600 group-hover:text-primary-700'
-                }`} />
-                <span className="font-semibold text-lg">Collections</span>
-              </button>
-
-              <button
-                onClick={() => { setActiveTab('explore'); loadExploreData(); }}
-                className={`w-full flex items-center space-x-4 px-5 py-4 rounded-xl transition-all duration-200 whitespace-nowrap group ${
-                  activeTab === 'explore'
-                    ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg transform scale-[1.02]'
-                    : 'text-gray-700 hover:bg-white hover:shadow-md hover:transform hover:scale-[1.01]'
-                }`}
-              >
-                <Search className={`w-6 h-6 transition-colors ${
-                  activeTab === 'explore' ? 'text-white' : 'text-primary-600 group-hover:text-primary-700'
-                }`} />
-                <span className="font-semibold text-lg">Explore</span>
-              </button>
-
-              <button
-                onClick={() => { setActiveTab('payments'); loadPayments(); }}
-                className={`w-full flex items-center space-x-4 px-5 py-4 rounded-xl transition-all duration-200 whitespace-nowrap group ${
-                  activeTab === 'payments'
-                    ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg transform scale-[1.02]'
-                    : 'text-gray-700 hover:bg-white hover:shadow-md hover:transform hover:scale-[1.01]'
-                }`}
-              >
-                <CreditCard className={`w-6 h-6 transition-colors ${
-                  activeTab === 'payments' ? 'text-white' : 'text-primary-600 group-hover:text-primary-700'
-                }`} />
-                <span className="font-semibold text-lg">Payment History</span>
-              </button>
-            </nav>
-          </div>
-        </aside>
+        <BuyerSidebar activeTab={activeTab} setActiveTab={handleSidebarClick} />
 
         {/* Main Content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 animate-fade-in">
@@ -744,12 +611,9 @@ const BuyerDashboard = () => {
             {/* Collections Tab */}
             {activeTab === 'collections' && (
               <>
-                <div className="flex items-center justify-between mb-8">
-                  <h1 className="text-4xl font-bold text-gray-900">My Collections</h1>
-                  <button className="bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold px-6 py-3 rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center space-x-2">
-                    <Plus className="w-5 h-5" />
-                    <span>Create Collection</span>
-                  </button>
+                <div className="mb-8">
+                  <h1 className="text-4xl font-bold text-gray-900 mb-2">Favorite Products</h1>
+                  <p className="text-gray-600">Your saved favorite handcrafted items from talented artisans.</p>
                 </div>
 
                 {loading ? (
@@ -769,37 +633,46 @@ const BuyerDashboard = () => {
                     <div className="w-20 h-20 bg-gradient-to-br from-primary-100 to-primary-200 rounded-full flex items-center justify-center mx-auto mb-6">
                       <Heart className="w-10 h-10 text-primary-600" />
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-3">No collections yet</h3>
-                    <p className="text-gray-600 mb-8 max-w-md mx-auto">Create collections to organize your favorite handmade crafts and keep track of items you're interested in.</p>
-                    <button className="bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold px-8 py-4 rounded-xl inline-flex items-center space-x-3 hover:from-primary-600 hover:to-primary-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
-                      <Plus className="w-6 h-6" />
-                      <span>Create Your First Collection</span>
-                    </button>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3">No favorites yet</h3>
+                    <p className="text-gray-600 mb-8 max-w-md mx-auto">Start adding products to your favorites by clicking the heart icon on products you love.</p>
+                    <Link
+                      to="/buyer-dashboard?tab=explore"
+                      className="bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold px-8 py-4 rounded-xl inline-flex items-center space-x-3 hover:from-primary-600 hover:to-primary-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                    >
+                      <span>Explore Products</span>
+                    </Link>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-                    {collections.map((collection) => (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {collections.map((favorite) => (
                       <Link
-                        key={collection.id}
-                        to={`/collection/${collection.id}`}
+                        key={favorite.id}
+                        to={`/product/${favorite.product_id || favorite.id}`}
                         className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden group cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2"
                       >
-                        <div className="aspect-square overflow-hidden">
+                        <div className="aspect-square overflow-hidden relative">
                           <img
-                            src={safeSrc(collection.image || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop', 400, 400)}
-                            alt={collection.name}
+                            src={safeSrc(favorite.product?.image || favorite.image || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop', 400, 400)}
+                            alt={favorite.product?.title || favorite.title}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                          <div className="absolute top-3 right-3 p-2 bg-white/80 rounded-full">
+                            <Heart className="w-4 h-4 text-red-500 fill-current" />
+                          </div>
                         </div>
                         <div className="p-6">
-                          <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors">
-                            {collection.name}
+                          <h3 className="text-lg font-semibold text-gray-900 group-hover:text-primary-600 mb-1">
+                            {favorite.product?.title || favorite.title}
                           </h3>
-                          <p className="text-gray-600 flex items-center space-x-2">
-                            <Heart className="w-4 h-4 text-red-500" />
-                            <span>{collection.itemCount || 0} items</span>
-                          </p>
+                          <p className="text-sm text-gray-500 mb-2">by {favorite.product?.artisan_name || favorite.artisan_name || 'Unknown'}</p>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xl font-bold text-gray-900">
+                              KSh {(favorite.product?.price || favorite.price || 0).toLocaleString()}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              Added {favorite.created_at ? new Date(favorite.created_at).toLocaleDateString() : 'Recently'}
+                            </span>
+                          </div>
                         </div>
                       </Link>
                     ))}
