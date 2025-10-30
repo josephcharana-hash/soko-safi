@@ -1,6 +1,6 @@
 from flask_restful import Resource, Api
 from flask import Blueprint, request
-from app.models import db, Product
+from app.models import db, Product, Category, Subcategory
 from app.auth import require_auth, require_role, require_ownership_or_role
 
 product_bp = Blueprint('product_bp', __name__)
@@ -33,23 +33,104 @@ class ProductListResource(Resource):
     def post(self):
         """Create new product - Artisan or Admin only"""
         try:
-            data = request.json
+            from flask import session
+            from app.models import Category, Subcategory
+            
+            # Handle both JSON and form data (for file uploads)
+            if request.content_type and 'multipart/form-data' in request.content_type:
+                data = request.form.to_dict()
+                files = request.files
+            else:
+                data = request.json or {}
+                files = {}
+            
             if not data:
                 return {'error': 'No data provided'}, 400
             
-            from flask import session
+            # Required fields validation
+            required_fields = ['title', 'description', 'price']
+            for field in required_fields:
+                if not data.get(field):
+                    return {'error': f'{field} is required'}, 400
             
             # Set artisan_id to current user if not admin
-            if session.get('user_role') != 'admin':
-                data['artisan_id'] = session.get('user_id')
+            artisan_id = session.get('user_id')
+            if session.get('user_role') == 'admin' and 'artisan_id' in data:
+                artisan_id = data['artisan_id']
             
-            product = Product(**data)
+            # Handle image upload to Cloudinary
+            image_url = None
+            image_file = files.get('image')
+            if image_file:
+                try:
+                    import cloudinary.uploader
+                    
+                    # Upload to Cloudinary
+                    upload_result = cloudinary.uploader.upload(
+                        image_file,
+                        folder='soko-safi/products',
+                        transformation=[
+                            {'width': 800, 'height': 600, 'crop': 'fill'},
+                            {'quality': 'auto'}
+                        ]
+                    )
+                    
+                    image_url = upload_result.get('secure_url')
+                    
+                except Exception as e:
+                    return {'error': f'Image upload failed: {str(e)}'}, 500
+            
+            # Get or create category and subcategory
+            category_id = None
+            subcategory_id = None
+            
+            if data.get('category'):
+                category = Category.query.filter_by(name=data['category']).first()
+                if not category:
+                    category = Category(name=data['category'])
+                    db.session.add(category)
+                    db.session.flush()  # Get the ID
+                category_id = category.id
+            
+            if data.get('subcategory') and category_id:
+                subcategory = Subcategory.query.filter_by(name=data['subcategory'], category_id=category_id).first()
+                if not subcategory:
+                    subcategory = Subcategory(name=data['subcategory'], category_id=category_id)
+                    db.session.add(subcategory)
+                    db.session.flush()  # Get the ID
+                subcategory_id = subcategory.id
+            
+            # Create product
+            product = Product(
+                artisan_id=artisan_id,
+                title=data['title'],
+                description=data['description'],
+                price=float(data['price']),
+                stock=int(data.get('stock', 1)),
+                currency=data.get('currency', 'KSH'),
+                category_id=category_id,
+                subcategory_id=subcategory_id,
+                image=image_url,
+                status='active'
+            )
+            
             db.session.add(product)
             db.session.commit()
-            return {'id': product.id}, 201
+            
+            return {
+                'message': 'Product created successfully',
+                'product': {
+                    'id': product.id,
+                    'title': product.title,
+                    'price': float(product.price),
+                    'image': product.image_url,
+                    'status': product.status
+                }
+            }, 201
+            
         except Exception as e:
             db.session.rollback()
-            return {'error': 'Failed to create product'}, 500
+            return {'error': f'Failed to create product: {str(e)}'}, 500
 
 class ProductResource(Resource):
     def get(self, product_id):
