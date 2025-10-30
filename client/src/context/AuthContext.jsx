@@ -14,23 +14,25 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuth = async () => {
     try {
+      console.log('[AuthContext] Starting auth check...');
       setError(null);
       const data = await api.auth.getSession();
-      console.log('Auth session data:', data);
+      console.log('[AuthContext] Session response:', data);
       
       // Handle different response formats from backend
       if (data && data.authenticated && data.user) {
         setUser(data.user);
-        console.log('User authenticated:', data.user);
+        console.log('[AuthContext] User authenticated:', data.user);
       } else {
         setUser(null);
-        console.log('User not authenticated, session data:', data);
+        console.log('[AuthContext] User not authenticated, session data:', data);
       }
     } catch (error) {
-      console.warn('Auth check failed:', error.message);
+      console.warn('[AuthContext] Auth check failed:', error.message);
       setUser(null);
       // Don't set error for session check failures
     } finally {
+      console.log('[AuthContext] Auth check complete, loading set to false');
       setLoading(false);
     }
   };

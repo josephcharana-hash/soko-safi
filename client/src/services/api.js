@@ -108,7 +108,12 @@ export const api = {
       }
     },
     logout: () => apiRequest('/auth/logout', { method: 'POST' }),
-    getSession: () => apiRequest('/auth/session'),
+    getSession: async () => {
+      console.log('[API] Checking session...');
+      const result = await apiRequest('/auth/session');
+      console.log('[API] Session result:', result);
+      return result;
+    },
     getProfile: () => apiRequest('/auth/profile'),
     updateProfile: (data) => apiRequest('/auth/profile', {
       method: 'PUT',

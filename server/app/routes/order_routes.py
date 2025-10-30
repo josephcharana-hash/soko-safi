@@ -31,14 +31,21 @@ class OrderListResource(Resource):
         # Enhance orders with additional data
         enhanced_orders = []
         for order in orders:
-            # Get order items with product details
-            order_items = db.session.query(OrderItem, Product).join(
+            # Get order items with product details and artisan info
+            order_items = db.session.query(OrderItem, Product, User).join(
                 Product, OrderItem.product_id == Product.id
+            ).join(
+                User, OrderItem.artisan_id == User.id, isouter=True
             ).filter(OrderItem.order_id == order.id, OrderItem.deleted_at.is_(None)).all()
 
             # Get user details for the order
             user = User.query.get(order.user_id) if order.user_id else None
 
+            # Get first product and artisan for display
+            first_item = order_items[0] if order_items else (None, None, None)
+            first_product = first_item[1] if first_item else None
+            first_artisan = first_item[2] if first_item else None
+            
             enhanced_order = {
                 'id': order.id,
                 'user_id': order.user_id,
@@ -48,6 +55,13 @@ class OrderListResource(Resource):
                 'total_amount': float(order.total_amount) if order.total_amount else 0,
                 'created_at': order.created_at.isoformat() if order.created_at else None,
                 'updated_at': order.updated_at.isoformat() if order.updated_at else None,
+                # Add fields expected by frontend
+                'title': first_product.title if first_product else 'Order',
+                'product': first_product.title if first_product else 'Multiple Items',
+                'artisan_name': first_artisan.full_name if first_artisan else 'Various Artisans',
+                'image': first_product.image if first_product else None,
+                'product_id': first_product.id if first_product else None,
+                'artisan_id': first_item[0].artisan_id if first_item and first_item[0] else None,
                 'items': [{
                     'product_id': item.product_id,
                     'product_title': product.title if product else 'Unknown Product',
@@ -55,7 +69,7 @@ class OrderListResource(Resource):
                     'unit_price': float(item.unit_price) if item.unit_price else 0,
                     'total_price': float(item.total_price) if item.total_price else 0,
                     'artisan_id': item.artisan_id
-                } for item, product in order_items]
+                } for item, product, artisan in order_items]
             }
             enhanced_orders.append(enhanced_order)
 
@@ -305,8 +319,34 @@ class OrderItemResource(Resource):
         
         return {'message': 'Order item deleted successfully'}, 200
 
+class OrderStatusResource(Resource):
+    @require_ownership_or_role('user_id', 'admin')
+    def put(self, order_id):
+        """Update order status - Owner or Admin only"""
+        try:
+            order = Order.query.get_or_404(order_id)
+            data = request.json
+            
+            if not data or 'status' not in data:
+                return {'error': 'Status is required'}, 400
+            
+            order.status = OrderStatus(data['status'])
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to update order status'}, 500
+        
+        return {
+            'message': 'Order status updated successfully',
+            'order': {
+                'id': order.id,
+                'status': order.status.value if order.status else None
+            }
+        }, 200
+
 # Register routes
 order_api.add_resource(OrderListResource, '/')
 order_api.add_resource(OrderResource, '/<order_id>')
+order_api.add_resource(OrderStatusResource, '/<order_id>/status')
 order_api.add_resource(OrderItemListResource, '/items/')
 order_api.add_resource(OrderItemResource, '/items/<order_item_id>')
