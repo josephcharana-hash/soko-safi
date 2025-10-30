@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Diamond, LayoutDashboard, Package, ShoppingBag, MessageSquare, Upload, Bell, User, Plus, Settings, Camera } from 'lucide-react'
+import { Diamond, Upload, Bell, User, Plus, Settings, Camera } from 'lucide-react'
 import { api } from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import ArtisanSidebar from '../Components/Layout/ArtisanSidebar'
 
 const ArtisanDashboard = () => {
   const { user, isAuthenticated, isArtisan } = useAuth()
   const [activeTab, setActiveTab] = useState('dashboard')
   const [showProfileSettings, setShowProfileSettings] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [profileData, setProfileData] = useState({
     full_name: '',
     description: '',
@@ -344,77 +346,21 @@ const ArtisanDashboard = () => {
       </nav>
 
       <div className="flex flex-col lg:flex-row">
-        {/* Sidebar */}
-        <aside className="w-full lg:w-80 bg-gradient-to-b from-white to-gray-50 border-b lg:border-b-0 lg:border-r border-gray-200 shadow-lg">
-          <div className="p-6">
-            <div className="flex items-center space-x-3 mb-8">
-              <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Diamond className="w-7 h-7 text-white" fill="currentColor" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">Artisan Hub</h2>
-                <p className="text-sm text-gray-500">Manage your craft</p>
-              </div>
-            </div>
-            <nav className="space-y-3">
-              <button
-                onClick={() => setActiveTab('dashboard')}
-                className={`w-full flex items-center space-x-4 px-5 py-4 rounded-xl transition-all duration-200 whitespace-nowrap group ${
-                  activeTab === 'dashboard'
-                    ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg transform scale-[1.02]'
-                    : 'text-gray-700 hover:bg-white hover:shadow-md hover:transform hover:scale-[1.01]'
-                }`}
-              >
-                <LayoutDashboard className={`w-6 h-6 transition-colors ${
-                  activeTab === 'dashboard' ? 'text-white' : 'text-primary-600 group-hover:text-primary-700'
-                }`} />
-                <span className="font-semibold text-lg">Dashboard</span>
-              </button>
-
-              <button
-                onClick={() => { setActiveTab('products'); setShowAddProduct(false); }}
-                className={`w-full flex items-center space-x-4 px-5 py-4 rounded-xl transition-all duration-200 whitespace-nowrap group ${
-                  activeTab === 'products'
-                    ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg transform scale-[1.02]'
-                    : 'text-gray-700 hover:bg-white hover:shadow-md hover:transform hover:scale-[1.01]'
-                }`}
-              >
-                <Package className={`w-6 h-6 transition-colors ${
-                  activeTab === 'products' ? 'text-white' : 'text-primary-600 group-hover:text-primary-700'
-                }`} />
-                <span className="font-semibold text-lg">My Products</span>
-              </button>
-
-              <button
-                onClick={() => { setActiveTab('orders'); loadOrders(); }}
-                className={`w-full flex items-center space-x-4 px-5 py-4 rounded-xl transition-all duration-200 whitespace-nowrap group ${
-                  activeTab === 'orders'
-                    ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg transform scale-[1.02]'
-                    : 'text-gray-700 hover:bg-white hover:shadow-md hover:transform hover:scale-[1.01]'
-                }`}
-              >
-                <ShoppingBag className={`w-6 h-6 transition-colors ${
-                  activeTab === 'orders' ? 'text-white' : 'text-primary-600 group-hover:text-primary-700'
-                }`} />
-                <span className="font-semibold text-lg">Orders</span>
-              </button>
-
-              <button
-                onClick={() => { setActiveTab('messages'); loadMessages(); }}
-                className={`w-full flex items-center space-x-4 px-5 py-4 rounded-xl transition-all duration-200 whitespace-nowrap group ${
-                  activeTab === 'messages'
-                    ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg transform scale-[1.02]'
-                    : 'text-gray-700 hover:bg-white hover:shadow-md hover:transform hover:scale-[1.01]'
-                }`}
-              >
-                <MessageSquare className={`w-6 h-6 transition-colors ${
-                  activeTab === 'messages' ? 'text-white' : 'text-primary-600 group-hover:text-primary-700'
-                }`} />
-                <span className="font-semibold text-lg">Messages</span>
-              </button>
-            </nav>
-          </div>
-        </aside>
+        <ArtisanSidebar
+          activeTab={activeTab}
+          onTabChange={(tab) => {
+            setActiveTab(tab)
+            setShowAddProduct(false)
+            if (tab === 'orders') loadOrders()
+            if (tab === 'messages') loadMessages()
+          }}
+          onAddProduct={() => {
+            setActiveTab('products')
+            setShowAddProduct(true)
+          }}
+          isCollapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        />
 
         {/* Main Content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 animate-fade-in">
