@@ -301,7 +301,7 @@ const CheckoutPage = () => {
       </div>
       <Footer />
     </div>
+  )
+}
 
-};
-
-export default CheckoutPage;
+export default CheckoutPage
