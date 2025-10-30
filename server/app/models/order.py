@@ -25,6 +25,8 @@ class Order(db.Model):
     placed_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     meta_data = db.Column(db.Text)
+    
+    order_items = db.relationship('OrderItem', backref='order', lazy=True)
 
 class OrderItem(db.Model):
     __tablename__ = "order_items"

@@ -7,8 +7,14 @@ load_dotenv()
 
 def create_app():
     flask_app = Flask(__name__)
-    flask_app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key')
-    flask_app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+    secret_key = os.getenv('SECRET_KEY')
+    if not secret_key:
+        raise ValueError('SECRET_KEY environment variable is required')
+    flask_app.config['SECRET_KEY'] = secret_key
+    database_url = os.getenv('DATABASE_URL')
+    if not database_url:
+        raise ValueError('DATABASE_URL environment variable is required')
+    flask_app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     flask_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
     # Session configuration
@@ -18,6 +24,8 @@ def create_app():
     flask_app.config['SESSION_KEY_PREFIX'] = 'soko_safi:'
     flask_app.config['SESSION_FILE_DIR'] = os.path.join(os.getcwd(), 'instance', 'sessions')
     flask_app.config['SESSION_FILE_THRESHOLD'] = 500
+    flask_app.config['UPLOAD_FOLDER'] = os.path.join(flask_app.root_path, 'uploads')
+    flask_app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
     
     # Initialize extensions
     db.init_app(flask_app)
@@ -26,7 +34,7 @@ def create_app():
     from .extensions import cors, socketio
     cors.init_app(flask_app, resources={
         r"/api/*": {
-            "origins": ["*", "http://localhost:5173", "http://127.0.0.1:5173"],
+            "origins": ["https://soko-safi.vercel.app", "http://localhost:5173", "http://127.0.0.1:5173"],
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"]
         }
@@ -53,6 +61,8 @@ def create_app():
     from app.routes.follow_routes import follow_bp
     from app.routes.notification_routes import notification_bp
     from app.routes.artisan_routes import artisan_bp
+    from app.routes.upload_routes import upload_bp
+    from app.routes.collection_routes import collection_bp
     
     flask_app.register_blueprint(auth_bp, url_prefix='/api/auth')
     flask_app.register_blueprint(user_bp, url_prefix='/api/users')
@@ -67,6 +77,8 @@ def create_app():
     flask_app.register_blueprint(follow_bp, url_prefix='/api/follows')
     flask_app.register_blueprint(notification_bp, url_prefix='/api/notifications')
     flask_app.register_blueprint(artisan_bp, url_prefix='/api/artisan')
+    flask_app.register_blueprint(upload_bp, url_prefix='/api/upload')
+    flask_app.register_blueprint(collection_bp, url_prefix='/api/collections')
     
     # Routes
     @flask_app.route('/')
@@ -82,12 +94,16 @@ def create_app():
     
     @flask_app.route('/test/order/<int:user_id>/<int:order_id>/<status>')
     def test_order_notification(user_id, order_id, status):
-        notify_order_status_change(user_id, order_id, status)
-        return f'Order notification sent to user {user_id}'
+        import html
+        safe_status = html.escape(str(status))
+        notify_order_status_change(user_id, order_id, safe_status)
+        return f'Order notification sent to user {html.escape(str(user_id))}'
 
     @flask_app.route('/test/payment/<int:user_id>/<int:payment_id>/<status>')
     def test_payment_notification(user_id, payment_id, status):
-        notify_payment_confirmation(user_id, payment_id, status)
-        return f'Payment notification sent to user {user_id}'
+        import html
+        safe_status = html.escape(str(status))
+        notify_payment_confirmation(user_id, payment_id, safe_status)
+        return f'Payment notification sent to user {html.escape(str(user_id))}'
     
     return flask_app

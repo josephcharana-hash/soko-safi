@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Diamond, LayoutDashboard, Package, ShoppingBag, MessageSquare, Upload, Bell, User, Plus, Settings, Camera } from 'lucide-react'
 import { api } from '../services/api'
+import { useAuth } from '../context/AuthContext'
 
 const ArtisanDashboard = () => {
+  const { user, isAuthenticated, isArtisan } = useAuth()
   const [activeTab, setActiveTab] = useState('dashboard')
   const [showProfileSettings, setShowProfileSettings] = useState(false)
   const [profileData, setProfileData] = useState({
@@ -39,20 +41,37 @@ const ArtisanDashboard = () => {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    loadDashboardData()
-    loadProducts()
-    loadProfileData()
-  }, [])
+    if (isAuthenticated && user) {
+      console.log('Loading artisan dashboard for user:', user)
+      loadDashboardData()
+      loadProducts()
+      loadProfileData()
+    } else {
+      console.log('User not authenticated, skipping dashboard load')
+    }
+  }, [isAuthenticated, user])
 
   const loadDashboardData = async () => {
     try {
       setDashboardLoading(true)
       setError(null)
       const dashboardData = await api.artisan.getDashboard()
-      setDashboardStats(dashboardData.stats)
+      console.log('Dashboard data received:', dashboardData)
+      if (dashboardData && dashboardData.stats) {
+        setDashboardStats(dashboardData.stats)
+      } else {
+        // Set default empty stats for new artisans
+        setDashboardStats({ total_products: 0, total_orders: 0, total_revenue: 0 })
+      }
     } catch (error) {
       console.error('Failed to load dashboard data:', error)
-      setError('Failed to load dashboard data. Please try again.')
+      // For new artisans or when backend fails, show empty state instead of error
+      setDashboardStats({ total_products: 0, total_orders: 0, total_revenue: 0 })
+      if (error.message.includes('Please log in')) {
+        setError('Please log in to view your dashboard.')
+      } else {
+        console.warn('Dashboard endpoint failed, showing empty state for new artisan')
+      }
     } finally {
       setDashboardLoading(false)
     }
@@ -61,10 +80,12 @@ const ArtisanDashboard = () => {
   const loadProducts = async () => {
     try {
       setLoading(true)
-      const products = await api.products.getAll()
-      setMyProducts(products)
+      // Get only the artisan's own products
+      const products = await api.artisan.getProducts(user?.id)
+      setMyProducts(products || [])
     } catch (error) {
       console.error('Failed to load products:', error)
+      setMyProducts([])
     } finally {
       setLoading(false)
     }
@@ -172,6 +193,7 @@ const ArtisanDashboard = () => {
     
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0]
+      setSelectedFile(file)
       const reader = new FileReader()
       reader.onload = (e) => {
         setUploadedImage(e.target.result)
@@ -180,9 +202,12 @@ const ArtisanDashboard = () => {
     }
   }
 
+  const [selectedFile, setSelectedFile] = useState(null)
+
   const handleFileInput = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0]
+      setSelectedFile(file)
       const reader = new FileReader()
       reader.onload = (e) => {
         setUploadedImage(e.target.result)
@@ -203,20 +228,29 @@ const ArtisanDashboard = () => {
     
     try {
       setLoading(true)
-      const productData = {
-        title: formData.title,
-        description: formData.description,
-        price: parseFloat(formData.price),
-        stock: 10, // Default stock
-        currency: 'USD'
+      
+      // Create FormData for file upload
+      const formDataToSend = new FormData()
+      formDataToSend.append('title', formData.title)
+      formDataToSend.append('description', formData.description)
+      formDataToSend.append('price', parseFloat(formData.price))
+      formDataToSend.append('category', formData.category)
+      formDataToSend.append('subcategory', formData.subcategory)
+      formDataToSend.append('stock', 10)
+      formDataToSend.append('currency', 'KSH')
+      
+      // Add image if uploaded
+      if (selectedFile) {
+        formDataToSend.append('image', selectedFile)
       }
       
-      await api.products.create(productData)
+      await api.products.create(formDataToSend)
       await loadProducts() // Reload products
       
       setShowAddProduct(false)
       setFormData({ title: '', category: '', subcategory: '', description: '', price: '' })
       setUploadedImage(null)
+      setSelectedFile(null)
       
       alert('Product added successfully!')
     } catch (error) {
@@ -234,6 +268,39 @@ const ArtisanDashboard = () => {
       alert('Product deleted successfully!')
       setLoading(false)
     }
+  }
+
+  // Show loading while checking authentication
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Authentication Required</h2>
+          <p className="text-gray-600 mb-6">Please log in as an artisan to access your dashboard.</p>
+          <Link to="/login" className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors">
+            Go to Login
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  // Show role mismatch if user is not an artisan
+  if (user && !isArtisan) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
+          <p className="text-gray-600 mb-6">This dashboard is only available for artisan accounts.</p>
+          <Link to="/buyer-dashboard" className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors mr-4">
+            Go to Buyer Dashboard
+          </Link>
+          <Link to="/" className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors">
+            Go Home
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -260,15 +327,16 @@ const ArtisanDashboard = () => {
                 <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center shadow-lg overflow-hidden">
                   {profileData.profile_picture_url ? (
                     <img
-                      src={profileData.profile_picture_url}
+                      src={profileData.profile_picture_url.startsWith('http') ? profileData.profile_picture_url : ''}
                       alt="Profile"
                       className="w-full h-full object-cover"
+                      onError={(e) => { e.target.style.display = 'none'; }}
                     />
                   ) : (
                     <User className="w-5 h-5 text-white" />
                   )}
                 </div>
-                <span className="font-semibold hidden sm:block">{profileData.full_name || 'Artisan'}</span>
+                <span className="font-semibold hidden sm:block">{(profileData.full_name || 'Artisan').replace(/[<>"'&]/g, '')}</span>
               </button>
             </div>
           </div>
@@ -440,42 +508,7 @@ const ArtisanDashboard = () => {
                   </div>
                 )}
 
-                {/* Recent Activity Section */}
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Recent Activity</h2>
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl">
-                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                        <ShoppingBag className="w-5 h-5 text-green-600" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-gray-900">New order received</p>
-                        <p className="text-sm text-gray-600">Ceramic vase - Order #1234</p>
-                      </div>
-                      <span className="text-sm text-gray-500">2 hours ago</span>
-                    </div>
-                    <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <MessageSquare className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-gray-900">New message</p>
-                        <p className="text-sm text-gray-600">From Sarah Williams about your products</p>
-                      </div>
-                      <span className="text-sm text-gray-500">5 hours ago</span>
-                    </div>
-                    <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl">
-                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                        <Package className="w-5 h-5 text-purple-600" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-gray-900">Product added</p>
-                        <p className="text-sm text-gray-600">Handcrafted wooden bowl added to catalog</p>
-                      </div>
-                      <span className="text-sm text-gray-500">1 day ago</span>
-                    </div>
-                  </div>
-                </div>
+
               </>
             )}
 

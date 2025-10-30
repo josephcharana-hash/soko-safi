@@ -1,30 +1,26 @@
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import {
-  Search,
-  Filter,
-  Grid,
-  List,
-  Heart,
-  Star,
-  MapPin,
-} from "lucide-react";
-import Navbar from "../Components/Layout/Navbar";
-import Footer from "../Components/Layout/Footer";
-import LazyImage from "../Components/LazyImage";
-import LoadingSpinner from "../Components/LoadingSpinner";
-import { api } from "../services/api";
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
+import { Search, Filter, Grid, List, Heart, Star, MapPin, Clock } from 'lucide-react'
+import Navbar from '../Components/Layout/Navbar'
+import Footer from '../Components/Layout/Footer'
+import LazyImage from '../Components/LazyImage'
+import LoadingSpinner from '../Components/LoadingSpinner'
+import { api } from '../services/api'
 
 const ExplorePage = () => {
-  const [viewMode, setViewMode] = useState("grid");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [sortBy, setSortBy] = useState("featured");
-  const [showFilters, setShowFilters] = useState(false);
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [categories, setCategories] = useState([]);
+  const [viewMode, setViewMode] = useState('grid')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [sortBy, setSortBy] = useState('featured')
+  const [showFilters, setShowFilters] = useState(false)
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [categories, setCategories] = useState([])
+
+  // Categories will be loaded from API
+
+  // Products will be loaded from API
 
   useEffect(() => {
     const fetchData = async () => {
@@ -43,22 +39,22 @@ const ExplorePage = () => {
         setProducts(productsArray);
 
         // Build categories with product counts
-        const categoryMap = new Map();
-        productsArray.forEach((product) => {
-          const category = product.category || "other";
-          categoryMap.set(category, (categoryMap.get(category) || 0) + 1);
-        });
-
+        const categoryMap = new Map()
+        productsArray.forEach(product => {
+          const category = product.category || 'other'
+          categoryMap.set(category.toLowerCase(), (categoryMap.get(category.toLowerCase()) || 0) + 1)
+        })
+        
         const categoriesWithCounts = [
-          { id: "all", name: "All Categories", count: productsArray.length },
-          ...categoriesResponse.map((cat) => ({
-            id: cat.id,
+          { id: 'all', name: 'All Categories', count: productsArray.length },
+          ...categoriesResponse.map(cat => ({
+            id: cat.name.toLowerCase(), // Use category name as ID for matching
             name: cat.name,
-            count: categoryMap.get(cat.id) || 0,
-          })),
-        ];
-
-        setCategories(categoriesWithCounts);
+            count: categoryMap.get(cat.name.toLowerCase()) || 0
+          }))
+        ]
+        
+        setCategories(categoriesWithCounts)
       } catch (error) {
         console.error("Failed to fetch data:", error);
         setError("Failed to load products. Please try again later.");
@@ -79,15 +75,13 @@ const ExplorePage = () => {
     fetchData();
   }, []);
 
-  const filteredWorks = products.filter((work) => {
-    const matchesSearch =
-      work.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      work.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      work.artisan_name?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory =
-      selectedCategory === "all" || work.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const filteredWorks = products.filter(work => {
+    const matchesSearch = work.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         work.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         work.artisan_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCategory = selectedCategory === 'all' || work.category?.toLowerCase() === selectedCategory
+    return matchesSearch && matchesCategory
+  })
 
   const sortedWorks = [...filteredWorks].sort((a, b) => {
     switch (sortBy) {
@@ -102,7 +96,7 @@ const ExplorePage = () => {
       default:
         return 0;
     }
-  });
+  })
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -290,4 +284,3 @@ const ExplorePage = () => {
 };
 
 export default ExplorePage;
-

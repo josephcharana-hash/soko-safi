@@ -58,22 +58,39 @@ def get_notification_title(notification_type):
     return titles.get(notification_type, 'Notification')
 
 
+def sanitize_text(text):
+    """Sanitize text to prevent XSS"""
+    if not text:
+        return 'N/A'
+    return str(text).replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;').replace("'", '&#x27;')
+
 def get_notification_message(notification_type, data):
     """Get notification message based on type and data"""
     if notification_type == 'payment_success':
-        return f"Your payment of KES {data.get('amount', 0)} for order {data.get('order_id', 'N/A')} was successful."
+        amount = sanitize_text(data.get('amount', 0))
+        order_id = sanitize_text(data.get('order_id', 'N/A'))
+        return f"Your payment of KES {amount} for order {order_id} was successful."
     elif notification_type == 'payment_failed':
-        return f"Your payment for order {data.get('order_id', 'N/A')} failed: {data.get('reason', 'Unknown error')}"
+        order_id = sanitize_text(data.get('order_id', 'N/A'))
+        reason = sanitize_text(data.get('reason', 'Unknown error'))
+        return f"Your payment for order {order_id} failed: {reason}"
     elif notification_type == 'disbursement_success':
-        return f"You have received KES {data.get('amount', 0)} for your products."
+        amount = sanitize_text(data.get('amount', 0))
+        return f"You have received KES {amount} for your products."
     elif notification_type == 'disbursement_retry':
-        return f"We're still processing your payment of KES {data.get('amount', 0)}. Next retry in {data.get('next_retry', 'N/A')}."
+        amount = sanitize_text(data.get('amount', 0))
+        next_retry = sanitize_text(data.get('next_retry', 'N/A'))
+        return f"We're still processing your payment of KES {amount}. Next retry in {next_retry}."
     elif notification_type == 'disbursement_failed':
-        return f"There was an issue processing your payment. {data.get('message', 'Please contact support.')}"
+        message = sanitize_text(data.get('message', 'Please contact support.'))
+        return f"There was an issue processing your payment. {message}"
     elif notification_type == 'order_status_change':
-        return f"Your order {data.get('order_id', 'N/A')} status changed to {data.get('status', 'N/A')}."
+        order_id = sanitize_text(data.get('order_id', 'N/A'))
+        status = sanitize_text(data.get('status', 'N/A'))
+        return f"Your order {order_id} status changed to {status}."
     elif notification_type == 'new_message':
-        return f"You have a new message from {data.get('sender_name', 'someone')}."
+        sender_name = sanitize_text(data.get('sender_name', 'someone'))
+        return f"You have a new message from {sender_name}."
 
     return "You have a new notification."
 

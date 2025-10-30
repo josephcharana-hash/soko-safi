@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom'
 import { Diamond, LayoutDashboard, ShoppingBag, MessageSquare, Heart, Star, User, Bell, Package, CreditCard, Plus } from 'lucide-react'
 import ReviewModal from '../Components/ReviewModal'
 import { api } from '../services/api'
+import { useAuth } from '../context/AuthContext'
 
 const BuyerDashboard = () => {
+  const { user, isAuthenticated, isBuyer } = useAuth()
   const [activeTab, setActiveTab] = useState('dashboard')
   const [reviewModal, setReviewModal] = useState({ isOpen: false, product: null })
 
@@ -27,21 +29,33 @@ const BuyerDashboard = () => {
 
   // Load dashboard data on component mount
   useEffect(() => {
-    loadDashboardData()
-  }, [])
+    if (isAuthenticated && user) {
+      console.log('Loading buyer dashboard for user:', user)
+      loadDashboardData()
+    } else {
+      console.log('User not authenticated, skipping dashboard load')
+    }
+  }, [isAuthenticated, user])
 
   const loadDashboardData = async () => {
     try {
       setDashboardLoading(true)
       setError(null)
 
-      // Load all dashboard data in parallel
-      const [ordersData, messagesData, collectionsData, paymentsData] = await Promise.all([
+      // Load all dashboard data in parallel, but handle failures gracefully
+      const results = await Promise.allSettled([
         api.orders.getAll(),
         api.messages.getConversations(),
         api.favorites.getAll(),
         api.payments.getAll()
       ])
+
+      const ordersData = results[0].status === 'fulfilled' ? results[0].value : []
+      const messagesData = results[1].status === 'fulfilled' ? results[1].value : []
+      const collectionsData = results[2].status === 'fulfilled' ? results[2].value : []
+      const paymentsData = results[3].status === 'fulfilled' ? results[3].value : []
+
+      console.log('Dashboard data loaded:', { ordersData, messagesData, collectionsData, paymentsData })
 
       setOrders(ordersData || [])
       setMessages(messagesData || [])
@@ -59,9 +73,26 @@ const BuyerDashboard = () => {
         total_spent: totalSpent
       })
 
+      // Check if any critical errors occurred
+      const failedRequests = results.filter(r => r.status === 'rejected')
+      if (failedRequests.length > 0) {
+        console.warn('Some dashboard data failed to load:', failedRequests.map(r => r.reason?.message))
+      }
+
     } catch (error) {
       console.error('Failed to load dashboard data:', error)
-      setError('Failed to load dashboard data. Please try again.')
+      // Set empty state instead of error for new users
+      setOrders([])
+      setMessages([])
+      setCollections([])
+      setPayments([])
+      setDashboardStats({ total_orders: 0, total_collections: 0, total_messages: 0, total_spent: 0 })
+      
+      if (error.message.includes('Please log in')) {
+        setError('Please log in to view your dashboard.')
+      } else {
+        console.warn('Dashboard endpoints failed, showing empty state for new user')
+      }
     } finally {
       setDashboardLoading(false)
     }
@@ -158,6 +189,39 @@ const BuyerDashboard = () => {
   const safeSrc = (url, w = 200, h = 200) => {
     const formatted = ensureUnsplashFormat(url)
     return formatted || fallbackImage(w, h)
+  }
+
+  // Show loading while checking authentication
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Authentication Required</h2>
+          <p className="text-gray-600 mb-6">Please log in as a buyer to access your dashboard.</p>
+          <Link to="/login" className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors">
+            Go to Login
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  // Show role mismatch if user is not a buyer
+  if (user && !isBuyer) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
+          <p className="text-gray-600 mb-6">This dashboard is only available for buyer accounts.</p>
+          <Link to="/artisan-dashboard" className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors mr-4">
+            Go to Artisan Dashboard
+          </Link>
+          <Link to="/" className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors">
+            Go Home
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -384,42 +448,7 @@ const BuyerDashboard = () => {
                   </div>
                 )}
 
-                {/* Recent Activity Section */}
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Recent Activity</h2>
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl">
-                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                        <ShoppingBag className="w-5 h-5 text-green-600" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-gray-900">Order completed</p>
-                        <p className="text-sm text-gray-600">Ceramic vase delivery confirmed</p>
-                      </div>
-                      <span className="text-sm text-gray-500">2 hours ago</span>
-                    </div>
-                    <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <MessageSquare className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-gray-900">New message</p>
-                        <p className="text-sm text-gray-600">Sarah Johnson replied to your inquiry</p>
-                      </div>
-                      <span className="text-sm text-gray-500">5 hours ago</span>
-                    </div>
-                    <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl">
-                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                        <Heart className="w-5 h-5 text-purple-600" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-gray-900">Added to favorites</p>
-                        <p className="text-sm text-gray-600">Wooden bowl added to your collection</p>
-                      </div>
-                      <span className="text-sm text-gray-500">1 day ago</span>
-                    </div>
-                  </div>
-                </div>
+
               </>
             )}
 

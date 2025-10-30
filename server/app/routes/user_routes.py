@@ -30,10 +30,24 @@ class UserListResource(Resource):
     def post(self):
         """Create new user - Admin only"""
         data = request.json
-
-        user = User(**data)
-        db.session.add(user)
-        db.session.commit()
+        
+        if not data or 'email' not in data or 'full_name' not in data:
+            return {'error': 'email and full_name are required'}, 400
+        
+        try:
+            user = User(
+                email=data.get('email'),
+                full_name=data.get('full_name'),
+                role=UserRole(data.get('role', 'buyer')),
+                phone=data.get('phone'),
+                location=data.get('location'),
+                description=data.get('description')
+            )
+            db.session.add(user)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to create user'}, 500
 
         return {
             'message': 'User created successfully',
@@ -49,7 +63,10 @@ class UserResource(Resource):
     @require_ownership_or_role('user_id', 'admin')
     def get(self, user_id):
         """Get user details - Owner or Admin only"""
-        user = User.query.get_or_404(user_id)
+        try:
+            user = User.query.get_or_404(user_id)
+        except Exception as e:
+            return {'error': 'User not found'}, 404
 
         return {
             'id': user.id,
@@ -72,31 +89,38 @@ class UserResource(Resource):
     @require_ownership_or_role('user_id', 'admin')
     def put(self, user_id):
         """Update user - Owner or Admin only"""
-        user = User.query.get_or_404(user_id)
-        data = request.json
+        try:
+            user = User.query.get_or_404(user_id)
+            data = request.json
+            
+            if not data:
+                return {'error': 'No data provided'}, 400
 
-        # Update basic fields
-        if 'full_name' in data:
-            user.full_name = data['full_name']
-        if 'phone' in data:
-            user.phone = data['phone']
-        if 'description' in data:
-            user.description = data['description']
-        if 'location' in data:
-            user.location = data['location']
+            # Update basic fields
+            if 'full_name' in data:
+                user.full_name = data['full_name']
+            if 'phone' in data:
+                user.phone = data['phone']
+            if 'description' in data:
+                user.description = data['description']
+            if 'location' in data:
+                user.location = data['location']
 
-        # Update artisan payment method fields (only for artisans)
-        if user.role == UserRole.artisan:
-            if 'payment_method' in data:
-                user.payment_method = PaymentMethod(data['payment_method'])
-            if 'mpesa_phone' in data:
-                user.mpesa_phone = data['mpesa_phone']
-            if 'paybill_number' in data:
-                user.paybill_number = data['paybill_number']
-            if 'paybill_account' in data:
-                user.paybill_account = data['paybill_account']
+            # Update artisan payment method fields (only for artisans)
+            if user.role == UserRole.artisan:
+                if 'payment_method' in data:
+                    user.payment_method = PaymentMethod(data['payment_method'])
+                if 'mpesa_phone' in data:
+                    user.mpesa_phone = data['mpesa_phone']
+                if 'paybill_number' in data:
+                    user.paybill_number = data['paybill_number']
+                if 'paybill_account' in data:
+                    user.paybill_account = data['paybill_account']
 
-        db.session.commit()
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to update user'}, 500
 
         return {
             'message': 'User updated successfully',
@@ -114,11 +138,15 @@ class UserResource(Resource):
     @require_role('admin')
     def delete(self, user_id):
         """Delete user - Admin only"""
-        user = User.query.get_or_404(user_id)
+        try:
+            user = User.query.get_or_404(user_id)
 
-        from datetime import datetime
-        user.deleted_at = datetime.utcnow()
-        db.session.commit()
+            from datetime import datetime
+            user.deleted_at = datetime.utcnow()
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to delete user'}, 500
 
         return {'message': 'User deleted successfully'}, 200
 

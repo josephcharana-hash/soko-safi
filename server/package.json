@@ -1,0 +1,12 @@
+{
+  "name": "soko-safi-server",
+  "version": "1.0.0",
+  "description": "Soko Safi Flask Backend Server",
+  "scripts": {
+    "dev": "python dev.py",
+    "start": "python main.py",
+    "init-db": "python init_db.py"
+  },
+  "keywords": ["flask", "api", "soko-safi"],
+  "author": "Soko Safi Team"
+}

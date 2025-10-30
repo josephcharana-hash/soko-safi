@@ -35,13 +35,26 @@ class ArtisanShowcaseMediaListResource(Resource):
         from flask import session
         data = request.json
         
-        # Set artisan_id to current user if not admin
-        if session.get('user_role') != 'admin':
-            data['artisan_id'] = session.get('user_id')
+        if not data or 'media_type' not in data or 'media_url' not in data:
+            return {'error': 'media_type and media_url are required'}, 400
         
-        showcase_media = ArtisanShowcaseMedia(**data)
-        db.session.add(showcase_media)
-        db.session.commit()
+        try:
+            # Set artisan_id to current user if not admin
+            artisan_id = session.get('user_id')
+            if session.get('user_role') == 'admin' and 'artisan_id' in data:
+                artisan_id = data['artisan_id']
+            
+            showcase_media = ArtisanShowcaseMedia(
+                artisan_id=artisan_id,
+                media_type=data.get('media_type'),
+                media_url=data.get('media_url'),
+                caption=data.get('caption')
+            )
+            db.session.add(showcase_media)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to create showcase media'}, 500
         
         return {
             'message': 'Artisan showcase media created successfully',
@@ -71,19 +84,27 @@ class ArtisanShowcaseMediaResource(Resource):
     @require_ownership_or_role('artisan_id', 'admin')
     def put(self, showcase_media_id):
         """Update artisan showcase media - Owner or Admin only"""
-        showcase_media = ArtisanShowcaseMedia.query.get_or_404(showcase_media_id)
-        data = request.json
-        
-        if 'media_type' in data:
-            showcase_media.media_type = data['media_type']
-        if 'media_url' in data:
-            showcase_media.media_url = data['media_url']
-        if 'caption' in data:
-            showcase_media.caption = data['caption']
-        if 'artisan_id' in data and session.get('user_role') == 'admin':
-            showcase_media.artisan_id = data['artisan_id']
-        
-        db.session.commit()
+        try:
+            showcase_media = ArtisanShowcaseMedia.query.get_or_404(showcase_media_id)
+            data = request.json
+            
+            if not data:
+                return {'error': 'No data provided'}, 400
+            
+            from flask import session
+            if 'media_type' in data:
+                showcase_media.media_type = data['media_type']
+            if 'media_url' in data:
+                showcase_media.media_url = data['media_url']
+            if 'caption' in data:
+                showcase_media.caption = data['caption']
+            if 'artisan_id' in data and session.get('user_role') == 'admin':
+                showcase_media.artisan_id = data['artisan_id']
+            
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to update showcase media'}, 500
         
         return {
             'message': 'Artisan showcase media updated successfully',
@@ -99,10 +120,14 @@ class ArtisanShowcaseMediaResource(Resource):
     @require_ownership_or_role('artisan_id', 'admin')
     def delete(self, showcase_media_id):
         """Delete artisan showcase media - Owner or Admin only"""
-        showcase_media = ArtisanShowcaseMedia.query.get_or_404(showcase_media_id)
-        from datetime import datetime
-        showcase_media.deleted_at = datetime.utcnow()
-        db.session.commit()
+        try:
+            showcase_media = ArtisanShowcaseMedia.query.get_or_404(showcase_media_id)
+            from datetime import datetime
+            showcase_media.deleted_at = datetime.utcnow()
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to delete showcase media'}, 500
         
         return {'message': 'Artisan showcase media deleted successfully'}, 200
 
@@ -129,13 +154,25 @@ class ArtisanSocialListResource(Resource):
         from flask import session
         data = request.json
         
-        # Set artisan_id to current user if not admin
-        if session.get('user_role') != 'admin':
-            data['artisan_id'] = session.get('user_id')
+        if not data or 'platform' not in data or 'url' not in data:
+            return {'error': 'platform and url are required'}, 400
         
-        social_link = ArtisanSocial(**data)
-        db.session.add(social_link)
-        db.session.commit()
+        try:
+            # Set artisan_id to current user if not admin
+            artisan_id = session.get('user_id')
+            if session.get('user_role') == 'admin' and 'artisan_id' in data:
+                artisan_id = data['artisan_id']
+            
+            social_link = ArtisanSocial(
+                artisan_id=artisan_id,
+                platform=data.get('platform'),
+                url=data.get('url')
+            )
+            db.session.add(social_link)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to create social link'}, 500
         
         return {
             'message': 'Artisan social link created successfully',

@@ -6,7 +6,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./hooks/useCart.jsx";
 import { quickHealthCheck } from "./utils/apiTest";
 
-// Lazy load components for performance
+// Lazy load components for better performance
 const Navbar = lazy(() => import("./Components/Layout/Navbar"));
 const Footer = lazy(() => import("./Components/Layout/Footer"));
 const HomePage = lazy(() => import("./Pages/HomePage"));
@@ -79,165 +79,154 @@ function App() {
       <AuthProvider>
         <CartProvider>
           <Router>
-            {/* Skip to main content link for accessibility */}
-            <a href="#main-content" className="skip-link">
-              Skip to main content
-            </a>
-
-            <div className="min-h-screen bg-gray-50 flex flex-col">
+            <div className="min-h-screen bg-gray-50">
               <Suspense fallback={<PageLoader />}>
-                <Navbar />
-                <main id="main-content" className="flex-grow">
-                  <Routes>
-                    {/* Main Routes */}
-                    <Route
-                      path="/"
-                      element={
-                        <ErrorBoundary>
-                          <HomePage />
-                        </ErrorBoundary>
-                      }
-                    />
-                    <Route
-                      path="/about"
-                      element={
-                        <ErrorBoundary>
-                          <AboutPage />
-                        </ErrorBoundary>
-                      }
-                    />
-                    <Route
-                      path="/login"
-                      element={
-                        <ErrorBoundary>
-                          <LoginPage />
-                        </ErrorBoundary>
-                      }
-                    />
-                    <Route
-                      path="/register"
-                      element={
-                        <ErrorBoundary>
-                          <RegisterPage />
-                        </ErrorBoundary>
-                      }
-                    />
-                    <Route
-                      path="/reset-password"
-                      element={
-                        <ErrorBoundary>
-                          <ResetPasswordPage />
-                        </ErrorBoundary>
-                      }
-                    />
-                    <Route
-                      path="/explore"
-                      element={
-                        <ErrorBoundary>
-                          <ExplorePage />
-                        </ErrorBoundary>
-                      }
-                    />
-                    <Route
-                      path="/product/:id"
-                      element={
-                        <ErrorBoundary>
-                          <ProductDetailPage />
-                        </ErrorBoundary>
-                      }
-                    />
-                    <Route
-                      path="/cart"
-                      element={
-                        <ErrorBoundary>
-                          <CartPage />
-                        </ErrorBoundary>
-                      }
-                    />
-                    <Route
-                      path="/checkout"
-                      element={
-                        <ErrorBoundary>
-                          <CheckoutPage />
-                        </ErrorBoundary>
-                      }
-                    />
-                    <Route
-                      path="/collection"
-                      element={
-                        <ErrorBoundary>
-                          <CollectionPage />
-                        </ErrorBoundary>
-                      }
-                    />
-                    <Route
-                      path="/collection/:id"
-                      element={
-                        <ErrorBoundary>
-                          <CollectionPage />
-                        </ErrorBoundary>
-                      }
-                    />
-                    <Route
-                      path="/messages"
-                      element={
-                        <ErrorBoundary>
-                          <MessagesPage />
-                        </ErrorBoundary>
-                      }
-                    />
-                    <Route
-                      path="/messages/:id"
-                      element={
-                        <ErrorBoundary>
-                          <MessagesPage />
-                        </ErrorBoundary>
-                      }
-                    />
-                    <Route
-                      path="/artisan/:id"
-                      element={
-                        <ErrorBoundary>
-                          <ArtisanProfilePage />
-                        </ErrorBoundary>
-                      }
-                    />
-                    <Route
-                      path="/buyer-dashboard"
-                      element={
-                        <ErrorBoundary>
-                          <BuyerDashboard />
-                        </ErrorBoundary>
-                      }
-                    />
-                    <Route
-                      path="/artisan-dashboard"
-                      element={
-                        <ErrorBoundary>
-                          <ArtisanDashboard />
-                        </ErrorBoundary>
-                      }
-                    />
-                    <Route
-                      path="/artisan-profile"
-                      element={
-                        <ErrorBoundary>
-                          <ArtisanProfilePage />
-                        </ErrorBoundary>
-                      }
-                    />
-                    {/* Fallback route */}
-                    <Route
-                      path="*"
-                      element={
-                        <ErrorBoundary>
-                          <HomePage />
-                        </ErrorBoundary>
-                      }
-                    />
-                  </Routes>
-                </main>
-                <Footer />
+                <Routes>
+                  <Route
+                    path="/"
+                    element={
+                      <ErrorBoundary>
+                        <HomePage />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/about"
+                    element={
+                      <ErrorBoundary>
+                        <AboutPage />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/login"
+                    element={
+                      <ErrorBoundary>
+                        <LoginPage />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/register"
+                    element={
+                      <ErrorBoundary>
+                        <RegisterPage />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/reset-password"
+                    element={
+                      <ErrorBoundary>
+                        <ResetPasswordPage />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/explore"
+                    element={
+                      <ErrorBoundary>
+                        <ExplorePage />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/product/:id"
+                    element={
+                      <ErrorBoundary>
+                        <ProductDetailPage />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/cart"
+                    element={
+                      <ErrorBoundary>
+                        <CartPage />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/checkout"
+                    element={
+                      <ErrorBoundary>
+                        <CheckoutPage />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/collection"
+                    element={
+                      <ErrorBoundary>
+                        <CollectionPage />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/collection/:id"
+                    element={
+                      <ErrorBoundary>
+                        <CollectionPage />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/messages"
+                    element={
+                      <ErrorBoundary>
+                        <MessagesPage />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/messages/:id"
+                    element={
+                      <ErrorBoundary>
+                        <MessagesPage />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/artisan/:id"
+                    element={
+                      <ErrorBoundary>
+                        <ArtisanProfilePage />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/buyer-dashboard"
+                    element={
+                      <ErrorBoundary>
+                        <BuyerDashboard />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/artisan-dashboard"
+                    element={
+                      <ErrorBoundary>
+                        <ArtisanDashboard />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/artisan-profile"
+                    element={
+                      <ErrorBoundary>
+                        <ArtisanProfilePage />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="*"
+                    element={
+                      <ErrorBoundary>
+                        <HomePage />
+                      </ErrorBoundary>
+                    }
+                  />
+                </Routes>
               </Suspense>
             </div>
           </Router>
@@ -248,5 +237,3 @@ function App() {
 }
 
 export default App;
-
-

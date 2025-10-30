@@ -16,10 +16,15 @@ export const AuthProvider = ({ children }) => {
     try {
       setError(null);
       const data = await api.auth.getSession();
-      if (data.authenticated && data.user) {
+      console.log('Auth session data:', data);
+      
+      // Handle different response formats from backend
+      if (data && data.authenticated && data.user) {
         setUser(data.user);
+        console.log('User authenticated:', data.user);
       } else {
         setUser(null);
+        console.log('User not authenticated, session data:', data);
       }
     } catch (error) {
       console.warn('Auth check failed:', error.message);
@@ -35,9 +40,18 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       setLoading(true);
       const data = await api.auth.login(credentials);
-      if (data.user) {
+      console.log('Login response:', data);
+      
+      // Handle different response formats from backend
+      if (data && data.user) {
         setUser(data.user);
+        console.log('User logged in:', data.user);
+      } else {
+        // After login, check session to get user data
+        console.log('Login successful, checking session...');
+        await checkAuth();
       }
+      
       return data;
     } catch (error) {
       setError(error.message);
@@ -52,9 +66,18 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       setLoading(true);
       const data = await api.auth.register(userData);
-      if (data.user) {
+      console.log('Registration response:', data);
+      
+      // Handle different response formats from backend
+      if (data && data.user) {
         setUser(data.user);
+        console.log('User registered and set:', data.user);
+      } else {
+        // After registration, check session to get user data
+        console.log('Registration successful, checking session...');
+        await checkAuth();
       }
+      
       return data;
     } catch (error) {
       setError(error.message);

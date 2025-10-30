@@ -1,21 +1,31 @@
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+const API_URL = import.meta.env.VITE_API_URL ;
 
 // API request helper with comprehensive error handling
 const apiRequest = async (endpoint, options = {}) => {
   try {
     const url = `${API_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+    console.log(`[API] Making ${options.method || 'GET'} request to: ${url}`);
     
     const config = {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      credentials: 'include',
-      ...options,
+      headers: options.headers || {},
+      credentials: 'include', // Always include credentials for session-based auth
+      timeout: 10000, // 10 second timeout
+      ...options
     };
+    
+    // Only set Content-Type for non-FormData requests
+    if (!(options.body instanceof FormData) && !config.headers['Content-Type']) {
+      config.headers['Content-Type'] = 'application/json';
+    }
+
+    // Log request details for debugging
+    if (options.body && config.method !== 'GET') {
+      console.log(`[API] Request body:`, options.body instanceof FormData ? 'FormData' : options.body);
+    }
 
     const response = await fetch(url, config);
+    console.log(`[API] Response status: ${response.status} for ${endpoint}`);
     
     // Handle non-JSON responses
     const contentType = response.headers.get('content-type');
@@ -31,18 +41,33 @@ const apiRequest = async (endpoint, options = {}) => {
     }
 
     const data = await response.json();
+    console.log(`[API] Response data for ${endpoint}:`, data);
     
     if (!response.ok) {
       // For DELETE requests, treat 500 errors as success silently
       if (config.method === 'DELETE' && response.status === 500) {
         return { success: true, message: 'Deleted' };
       }
+      
+      // Handle authentication errors
+      if (response.status === 401) {
+        console.warn('[API] Authentication required');
+        throw new Error('Please log in to continue');
+      }
+      
       throw new Error(data.message || data.error || `HTTP ${response.status}`);
     }
 
     return data;
   } catch (error) {
-    console.error(`API Error [${endpoint}]:`, error);
+    console.error(`[API] Error for ${endpoint}:`, error.message);
+    
+    // Check if it's a network error
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      console.warn(`[API] Network error - backend may be unavailable`);
+      throw new Error('Backend server is currently unavailable. Please try again later.');
+    }
+    
     throw error;
   }
 };
@@ -71,10 +96,17 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(credentials),
     }),
-    register: (userData) => apiRequest('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(userData),
-    }),
+    register: async (userData) => {
+      try {
+        return await apiRequest('/auth/register', {
+          method: 'POST',
+          body: JSON.stringify(userData),
+        });
+      } catch (error) {
+        console.error('[AUTH] Registration failed:', error.message);
+        throw error;
+      }
+    },
     logout: () => apiRequest('/auth/logout', { method: 'POST' }),
     getSession: () => apiRequest('/auth/session'),
     getProfile: () => apiRequest('/auth/profile'),
@@ -90,14 +122,7 @@ export const api = {
 
   // User management endpoints
   users: {
-    getAll: async () => {
-      try {
-        return await apiRequest('/users/');
-      } catch (error) {
-        console.warn('Users endpoint failed, returning empty array');
-        return [];
-      }
-    },
+    getAll: () => apiRequest('/users/'),
     getById: (id) => apiRequest(`/users/${id}`),
     update: (id, data) => apiRequest(`/users/${id}`, {
       method: 'PUT',
@@ -108,49 +133,17 @@ export const api = {
   // Product endpoints
   products: {
     getAll: async (params) => {
-      try {
-        const query = params ? '?' + new URLSearchParams(params).toString() : '';
-        const products = await apiRequest(`/products/${query}`);
-        return Array.isArray(products) ? products.map(enhanceProduct) : [];
-      } catch (error) {
-        console.warn('Products fetch failed, using fallback data');
-        return [
-          {
-            id: '1',
-            title: 'Handcrafted Ceramic Vase',
-            description: 'Beautiful ceramic vase with traditional patterns',
-            price: 2500,
-            currency: 'KSh',
-            stock: 5,
-            image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop&crop=center',
-            artisan_name: 'Mary Wanjiku',
-            location: 'Nairobi',
-            rating: 4.8,
-            review_count: 24,
-            in_stock: true
-          }
-        ];
-      }
+      const query = params ? '?' + new URLSearchParams(params).toString() : '';
+      const products = await apiRequest(`/products/${query}`);
+      return Array.isArray(products) ? products.map(enhanceProduct) : [];
     },
     getById: async (id) => {
-      try {
-        const product = await apiRequest(`/products/${id}`);
-        return enhanceProduct(product);
-      } catch (error) {
-        console.warn(`Product ${id} fetch failed, using fallback`);
-        return enhanceProduct({
-          id,
-          title: 'Product Not Found',
-          description: 'This product could not be loaded',
-          price: 0,
-          currency: 'KSh',
-          stock: 0
-        });
-      }
+      const product = await apiRequest(`/products/${id}`);
+      return enhanceProduct(product);
     },
     create: (data) => apiRequest('/products/', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: data instanceof FormData ? data : JSON.stringify(data),
     }),
     update: (id, data) => apiRequest(`/products/${id}`, {
       method: 'PUT',
@@ -163,17 +156,10 @@ export const api = {
   categories: {
     getAll: async () => {
       try {
-        return await apiRequest('/categories/');
+        return await apiRequest('/categories/')
       } catch (error) {
-        console.warn('Categories endpoint failed, using fallback');
-        return [
-          { id: '1', name: 'Pottery', description: 'Handmade ceramic items' },
-          { id: '2', name: 'Textiles', description: 'Woven fabrics and clothing' },
-          { id: '3', name: 'Wood Crafts', description: 'Carved wooden items' },
-          { id: '4', name: 'Jewelry', description: 'Handcrafted jewelry' },
-          { id: '5', name: 'Baskets', description: 'Woven baskets and containers' },
-          { id: '6', name: 'Metalwork', description: 'Metal crafts and tools' }
-        ];
+        console.warn('Categories failed:', error.message)
+        return []
       }
     },
     getById: (id) => apiRequest(`/categories/${id}`),
@@ -186,15 +172,48 @@ export const api = {
       body: JSON.stringify(data),
     }),
     delete: (id) => apiRequest(`/categories/${id}`, { method: 'DELETE' }),
+    
+    // Subcategory endpoints
+    subcategories: {
+      getAll: async () => {
+        try {
+          return await apiRequest('/categories/subcategories/')
+        } catch (error) {
+          console.warn('Subcategories failed:', error.message)
+          return []
+        }
+      },
+      getById: (id) => apiRequest(`/categories/subcategories/${id}`),
+      create: (data) => apiRequest('/categories/subcategories/', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+      update: (id, data) => apiRequest(`/categories/subcategories/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+      delete: (id) => apiRequest(`/categories/subcategories/${id}`, { method: 'DELETE' }),
+    }
   },
 
   // Cart endpoints
   cart: {
-    get: () => apiRequest('/cart/'),
-    add: (productId, quantity = 1) => apiRequest('/cart/', {
-      method: 'POST',
-      body: JSON.stringify({ product_id: productId, quantity }),
-    }),
+    get: async () => {
+      const result = await apiRequest('/cart/')
+      console.log('Cart get result:', result)
+      // Backend returns array of cart items directly
+      return { items: result, cart_items: result }
+    },
+    add: async (productId, quantity = 1) => {
+      console.log('API: Adding to cart', { productId, quantity })
+      console.log('API: Request payload:', { product_id: productId, quantity })
+      const result = await apiRequest('/cart/', {
+        method: 'POST',
+        body: JSON.stringify({ product_id: productId, quantity }),
+      })
+      console.log('API: Cart add successful', result)
+      return result
+    },
     update: (itemId, quantity) => apiRequest(`/cart/${itemId}`, {
       method: 'PUT',
       body: JSON.stringify({ quantity }),
@@ -207,10 +226,10 @@ export const api = {
   orders: {
     getAll: async () => {
       try {
-        return await apiRequest('/orders/');
+        return await apiRequest('/orders/')
       } catch (error) {
-        console.warn('Orders endpoint failed, using fallback');
-        return [];
+        console.warn('Orders failed:', error.message)
+        return []
       }
     },
     getById: (id) => apiRequest(`/orders/${id}`),
@@ -246,10 +265,10 @@ export const api = {
   messages: {
     getConversations: async () => {
       try {
-        return await apiRequest('/messages/conversations');
+        return await apiRequest('/messages/conversations')
       } catch (error) {
-        console.warn('Messages endpoint failed, using fallback');
-        return [];
+        console.warn('Messages failed:', error.message)
+        return []
       }
     },
     getMessages: (userId) => apiRequest(`/messages/${userId}`),
@@ -263,10 +282,10 @@ export const api = {
   favorites: {
     getAll: async () => {
       try {
-        return await apiRequest('/favorites/');
+        return await apiRequest('/favorites/')
       } catch (error) {
-        console.warn('Favorites endpoint failed, using fallback');
-        return [];
+        console.warn('Favorites failed:', error.message)
+        return []
       }
     },
     add: (productId) => apiRequest('/favorites/', {
@@ -302,26 +321,56 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
-    getDashboard: () => apiRequest('/artisan/dashboard'),
-    getOrders: () => apiRequest('/artisan/orders'),
-    getMessages: () => apiRequest('/artisan/messages'),
+    getDashboard: async () => {
+      try {
+        return await apiRequest('/artisan/dashboard')
+      } catch (error) {
+        console.warn('Artisan dashboard failed:', error.message)
+        return { stats: { total_products: 0, total_orders: 0, total_revenue: 0 } }
+      }
+    },
+    getOrders: async () => {
+      try {
+        return await apiRequest('/artisan/orders')
+      } catch (error) {
+        console.warn('Artisan orders failed:', error.message)
+        return []
+      }
+    },
+    getMessages: async () => {
+      try {
+        return await apiRequest('/artisan/messages')
+      } catch (error) {
+        console.warn('Artisan messages failed:', error.message)
+        return []
+      }
+    },
   },
 
   // User profile endpoints
   profile: {
-    get: () => apiRequest('/auth/profile'),
-    update: (data) => apiRequest('/auth/profile', {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    }),
-    uploadImage: (file) => {
-      const formData = new FormData();
-      formData.append('file', file);
-      return apiRequest('/upload/image', {
-        method: 'POST',
-        body: formData,
-        headers: {}, // Let browser set Content-Type for FormData
-      });
+    get: async () => {
+      try {
+        const response = await apiRequest('/auth/profile')
+        // Backend returns { user: { ... } }, extract the user data
+        return response.user || { full_name: '', description: '', location: '', phone: '', profile_picture_url: '' }
+      } catch (error) {
+        console.warn('Profile get failed:', error.message)
+        return { full_name: '', description: '', location: '', phone: '', profile_picture_url: '' }
+      }
+    },
+    update: async (data) => {
+      const response = await apiRequest('/auth/profile', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      })
+      // Backend returns { user: { ... } }, extract the user data
+      return response.user || response
+    },
+    uploadImage: async (file) => {
+      // Use Cloudinary directly for profile pictures
+      const { uploadToCloudinary } = await import('./cloudinary');
+      return uploadToCloudinary(file);
     },
   },
 
@@ -329,10 +378,10 @@ export const api = {
   payments: {
     getAll: async () => {
       try {
-        return await apiRequest('/payments/');
+        return await apiRequest('/payments/')
       } catch (error) {
-        console.warn('Payments endpoint failed, using fallback');
-        return [];
+        console.warn('Payments failed:', error.message)
+        return []
       }
     },
     create: (data) => apiRequest('/payments/', {
@@ -356,14 +405,9 @@ export const api = {
   // Upload endpoints
   upload: {
     image: async (file) => {
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      return apiRequest('/upload/image', {
-        method: 'POST',
-        body: formData,
-        headers: {}, // Let browser set Content-Type for FormData
-      });
+      // Use Cloudinary directly for better performance
+      const { uploadToCloudinary } = await import('./cloudinary');
+      return uploadToCloudinary(file);
     },
   },
 };

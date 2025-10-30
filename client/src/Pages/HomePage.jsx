@@ -1,18 +1,11 @@
-import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
-import Navbar from "../Components/Layout/Navbar";
-import Footer from "../Components/Layout/Footer";
-import LazyImage from "../Components/LazyImage";
-import LoadingSpinner from "../Components/LoadingSpinner";
-import { api } from "../services/api";
-import {
-  Star,
-  Users,
-  Award,
-  TrendingUp,
-  ArrowRight,
-  Sparkles,
-} from "lucide-react";
+import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import Navbar from '../Components/Layout/Navbar'
+import Footer from '../Components/Layout/Footer'
+import LazyImage from '../Components/LazyImage'
+import LoadingSpinner from '../Components/LoadingSpinner'
+import { api } from '../services/api'
+import { Star, Users, Award, TrendingUp, ArrowRight, Sparkles } from 'lucide-react'
 
 const HomePage = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -22,27 +15,24 @@ const HomePage = () => {
 
   const testimonials = [
     {
-      name: "Sarah Johnson",
-      role: "Interior Designer",
-      content:
-        "The quality of craftsmanship is outstanding. I love supporting local artisans.",
-      rating: 5,
+      name: 'Sarah Johnson',
+      role: 'Interior Designer',
+      content: 'The quality of craftsmanship is outstanding. I love supporting local artisans.',
+      rating: 5
     },
     {
-      name: "Michael Chen",
-      role: "Collector",
-      content:
-        "Found unique pieces I couldn't find anywhere else. Highly recommend!",
-      rating: 5,
+      name: 'Michael Chen',
+      role: 'Collector',
+      content: 'Found unique pieces I couldn\'t find anywhere else. Highly recommend!',
+      rating: 5
     },
     {
-      name: "Emma Rodriguez",
-      role: "Home Owner",
-      content:
-        "Beautiful products that tell a story. The artisans are incredibly talented.",
-      rating: 5,
-    },
-  ];
+      name: 'Emma Rodriguez',
+      role: 'Home Owner',
+      content: 'Beautiful products that tell a story. The artisans are incredibly talented.',
+      rating: 5
+    }
+  ]
 
   const stats = [
     { icon: Users, value: "500+", label: "Active Artisans" },
@@ -118,7 +108,10 @@ const HomePage = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
 
-      {/* Hero Section */}
+      {/* Skip link target */}
+      <a id="main-content" className="sr-only">Main content</a>
+
+      {/* Enhanced Hero Section */}
       <section
         className="relative min-h-screen flex items-center justify-center text-white overflow-hidden"
         aria-label="Hero section"
@@ -157,8 +150,7 @@ const HomePage = () => {
           </h1>
 
           <p className="text-xl md:text-2xl mb-8 text-gray-100 max-w-2xl mx-auto leading-relaxed">
-            Connect with talented Kenyan artisans and discover unique, handcrafted
-            products that tell stories of culture, tradition, and creativity.
+            Connect with talented Kenyan artisans and discover unique, handcrafted products that tell stories of culture, tradition, and creativity.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
@@ -214,7 +206,7 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Featured Works */}
+      {/* Featured Works Section */}
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -371,4 +363,3 @@ const HomePage = () => {
 };
 
 export default HomePage;
-

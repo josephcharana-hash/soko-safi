@@ -31,15 +31,20 @@ class CartListResource(Resource):
     def post(self):
         """Create new cart - Authenticated users only"""
         from flask import session
-        data = request.json
+        data = request.json or {}
         
-        # Set user_id to current user if not admin
-        if session.get('user_role') != 'admin':
-            data['user_id'] = session.get('user_id')
-        
-        cart = Cart(**data)
-        db.session.add(cart)
-        db.session.commit()
+        try:
+            # Set user_id to current user if not admin
+            user_id = session.get('user_id')
+            if session.get('user_role') == 'admin' and 'user_id' in data:
+                user_id = data['user_id']
+            
+            cart = Cart(user_id=user_id)
+            db.session.add(cart)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to create cart'}, 500
         
         return {
             'message': 'Cart created successfully',
@@ -64,14 +69,22 @@ class CartResource(Resource):
     @require_ownership_or_role('user_id', 'admin')
     def put(self, cart_id):
         """Update cart - Owner or Admin only"""
-        cart = Cart.query.get_or_404(cart_id)
-        data = request.json
-        
-        # Update allowed fields
-        if 'user_id' in data and session.get('user_role') == 'admin':
-            cart.user_id = data['user_id']
-        
-        db.session.commit()
+        try:
+            cart = Cart.query.get_or_404(cart_id)
+            data = request.json
+            
+            if not data:
+                return {'error': 'No data provided'}, 400
+            
+            from flask import session
+            # Update allowed fields
+            if 'user_id' in data and session.get('user_role') == 'admin':
+                cart.user_id = data['user_id']
+            
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to update cart'}, 500
         
         return {
             'message': 'Cart updated successfully',
@@ -84,10 +97,14 @@ class CartResource(Resource):
     @require_ownership_or_role('user_id', 'admin')
     def delete(self, cart_id):
         """Delete cart - Owner or Admin only"""
-        cart = Cart.query.get_or_404(cart_id)
-        from datetime import datetime
-        cart.deleted_at = datetime.utcnow()
-        db.session.commit()
+        try:
+            cart = Cart.query.get_or_404(cart_id)
+            from datetime import datetime
+            cart.deleted_at = datetime.utcnow()
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to delete cart'}, 500
         
         return {'message': 'Cart deleted successfully'}, 200
 
@@ -119,13 +136,11 @@ class CartItemListResource(Resource):
                 'cart_id': ci.cart_id,
                 'product_id': ci.product_id,
                 'quantity': ci.quantity,
-                'price': float(product.price) if product and product.price else 0,
+                'price': float(ci.unit_price) if ci.unit_price else 0,
                 'product': {
                     'id': product.id if product else None,
                     'title': product.title if product else 'Unknown Product',
-                    'price': float(product.price) if product and product.price else 0,
-                    'image': product.image if product else None,
-                    'artisan_name': product.artisan_name if product else None
+                    'price': float(product.price) if product and product.price else 0
                 } if product else None,
                 'created_at': ci.added_at.isoformat() if ci.added_at else None
             })
@@ -136,39 +151,56 @@ class CartItemListResource(Resource):
     def post(self):
         """Add item to cart - Authenticated users only"""
         from flask import session
+        from app.models import Product
         data = request.json
         
-        current_user_id = session.get('user_id')
-        product_id = data.get('product_id')
-        quantity = data.get('quantity', 1)
+        if not data or 'product_id' not in data:
+            return {'error': 'product_id is required'}, 400
         
-        # Get or create user's cart
-        cart = Cart.query.filter_by(user_id=current_user_id).first()
-        if not cart:
-            cart = Cart(user_id=current_user_id)
-            db.session.add(cart)
-            db.session.commit()
-        
-        # Check if item already exists in cart
-        existing_item = CartItem.query.filter_by(
-            cart_id=cart.id, 
-            product_id=product_id
-        ).first()
-        
-        if existing_item:
-            # Update quantity
-            existing_item.quantity += quantity
-            db.session.commit()
-            cart_item = existing_item
-        else:
-            # Create new cart item
-            cart_item = CartItem(
-                cart_id=cart.id,
-                product_id=product_id,
-                quantity=quantity
-            )
-            db.session.add(cart_item)
-            db.session.commit()
+        try:
+            current_user_id = session.get('user_id')
+            product_id = data.get('product_id')
+            quantity = data.get('quantity', 1)
+            
+            if quantity <= 0:
+                return {'error': 'Quantity must be positive'}, 400
+            
+            # Get product to validate existence and get price
+            product = Product.query.get(product_id)
+            if not product:
+                return {'error': 'Product not found'}, 404
+            
+            # Get or create user's cart
+            cart = Cart.query.filter_by(user_id=current_user_id).first()
+            if not cart:
+                cart = Cart(user_id=current_user_id)
+                db.session.add(cart)
+                db.session.commit()
+            
+            # Check if item already exists in cart
+            existing_item = CartItem.query.filter_by(
+                cart_id=cart.id, 
+                product_id=product_id
+            ).first()
+            
+            if existing_item:
+                # Update quantity
+                existing_item.quantity += quantity
+                db.session.commit()
+                cart_item = existing_item
+            else:
+                # Create new cart item
+                cart_item = CartItem(
+                    cart_id=cart.id,
+                    product_id=product_id,
+                    quantity=quantity,
+                    unit_price=product.price
+                )
+                db.session.add(cart_item)
+                db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to add item to cart'}, 500
         
         return {
             'message': 'Item added to cart successfully',
@@ -184,43 +216,61 @@ class CartItemResource(Resource):
     @require_auth
     def get(self, cart_item_id):
         """Get cart item details - Owner or Admin only"""
-        cart_item = CartItem.query.get_or_404(cart_item_id)
-        
-        # Check if user owns the cart
-        from flask import session
-        if session.get('user_role') != 'admin':
-            cart = Cart.query.get(cart_item.cart_id)
-            if cart and cart.user_id != session.get('user_id'):
-                return {'error': 'Access denied'}, 403
+        try:
+            cart_item = CartItem.query.get_or_404(cart_item_id)
+            
+            # Check if user owns the cart
+            from flask import session
+            if session.get('user_role') != 'admin':
+                cart = Cart.query.get(cart_item.cart_id)
+                if cart and cart.user_id != session.get('user_id'):
+                    return {'error': 'Access denied'}, 403
+        except Exception as e:
+            return {'error': 'Cart item not found'}, 404
         
         return {
             'id': cart_item.id,
             'cart_id': cart_item.cart_id,
             'product_id': cart_item.product_id,
             'quantity': cart_item.quantity,
+            'unit_price': float(cart_item.unit_price) if cart_item.unit_price else 0,
             'created_at': cart_item.created_at.isoformat() if cart_item.created_at else None
         }
     
     @require_auth
     def put(self, cart_item_id):
         """Update cart item - Owner or Admin only"""
-        cart_item = CartItem.query.get_or_404(cart_item_id)
-        
-        # Check if user owns the cart
-        from flask import session
-        if session.get('user_role') != 'admin':
-            cart = Cart.query.get(cart_item.cart_id)
-            if cart and cart.user_id != session.get('user_id'):
-                return {'error': 'Access denied'}, 403
-        
-        data = request.json
-        
-        if 'quantity' in data:
-            cart_item.quantity = data['quantity']
-        if 'product_id' in data:
-            cart_item.product_id = data['product_id']
-        
-        db.session.commit()
+        try:
+            cart_item = CartItem.query.get_or_404(cart_item_id)
+            
+            # Check if user owns the cart
+            from flask import session
+            if session.get('user_role') != 'admin':
+                cart = Cart.query.get(cart_item.cart_id)
+                if cart and cart.user_id != session.get('user_id'):
+                    return {'error': 'Access denied'}, 403
+            
+            data = request.json
+            if not data:
+                return {'error': 'No data provided'}, 400
+            
+            if 'quantity' in data:
+                if data['quantity'] <= 0:
+                    return {'error': 'Quantity must be positive'}, 400
+                cart_item.quantity = data['quantity']
+            if 'product_id' in data:
+                # If product is changed, update unit_price as well
+                from app.models import Product
+                product = Product.query.get(data['product_id'])
+                if not product:
+                    return {'error': 'Product not found'}, 404
+                cart_item.product_id = data['product_id']
+                cart_item.unit_price = product.price
+            
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to update cart item'}, 500
         
         return {
             'message': 'Cart item updated successfully',
@@ -228,24 +278,29 @@ class CartItemResource(Resource):
                 'id': cart_item.id,
                 'cart_id': cart_item.cart_id,
                 'product_id': cart_item.product_id,
-                'quantity': cart_item.quantity
+                'quantity': cart_item.quantity,
+                'unit_price': float(cart_item.unit_price) if cart_item.unit_price else 0
             }
         }, 200
     
     @require_auth
     def delete(self, cart_item_id):
         """Delete cart item - Owner or Admin only"""
-        cart_item = CartItem.query.get_or_404(cart_item_id)
-        
-        # Check if user owns the cart
-        from flask import session
-        if session.get('user_role') != 'admin':
-            cart = Cart.query.get(cart_item.cart_id)
-            if cart and cart.user_id != session.get('user_id'):
-                return {'error': 'Access denied'}, 403
-        
-        db.session.delete(cart_item)
-        db.session.commit()
+        try:
+            cart_item = CartItem.query.get_or_404(cart_item_id)
+            
+            # Check if user owns the cart
+            from flask import session
+            if session.get('user_role') != 'admin':
+                cart = Cart.query.get(cart_item.cart_id)
+                if cart and cart.user_id != session.get('user_id'):
+                    return {'error': 'Access denied'}, 403
+            
+            db.session.delete(cart_item)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to delete cart item'}, 500
         
         return {'message': 'Cart item deleted successfully'}, 200
 
@@ -256,14 +311,18 @@ class ClearCartResource(Resource):
         from flask import session
         current_user_id = session.get('user_id')
         
-        # Get user's cart
-        cart = Cart.query.filter_by(user_id=current_user_id).first()
-        if cart:
-            # Delete all cart items
-            cart_items = CartItem.query.filter_by(cart_id=cart.id).all()
-            for item in cart_items:
-                db.session.delete(item)
-            db.session.commit()
+        try:
+            # Get user's cart
+            cart = Cart.query.filter_by(user_id=current_user_id).first()
+            if cart:
+                # Delete all cart items
+                cart_items = CartItem.query.filter_by(cart_id=cart.id).all()
+                for item in cart_items:
+                    db.session.delete(item)
+                db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to clear cart'}, 500
         
         return {'message': 'Cart cleared successfully'}, 200
 

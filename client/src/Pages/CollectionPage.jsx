@@ -1,10 +1,8 @@
-
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Diamond, Heart, Trash2, ShoppingCart, Share2 } from "lucide-react";
 import Navbar from "../Components/Layout/Navbar";
 import Footer from "../Components/Layout/Footer";
-
 
 const CollectionPage = () => {
   const { id } = useParams();

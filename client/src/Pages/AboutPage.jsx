@@ -1,7 +1,6 @@
 import Navbar from "../Components/Layout/Navbar";
 import Footer from "../Components/Layout/Footer";
 
-
 const AboutPage = () => {
   return (
     <div className="min-h-screen flex flex-col">

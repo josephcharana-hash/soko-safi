@@ -34,8 +34,10 @@ const CartPage = () => {
   }
 
   const subtotal = cartItems.reduce((sum, item) => {
-    const price = typeof item.price === 'string' ? parseFloat(item.price) : item.price
-    return sum + (price * item.quantity)
+    const price = item.product?.price || item.price || 0
+    const numPrice = typeof price === 'string' ? parseFloat(price) : price
+    const validPrice = isNaN(numPrice) ? 0 : numPrice
+    return sum + (validPrice * item.quantity)
   }, 0)
 
   const shipping = 150.00 // KSH 150 shipping
@@ -43,7 +45,11 @@ const CartPage = () => {
   const total = subtotal + shipping + tax
 
   const handleCheckout = () => {
-    navigate('/checkout')
+    if (cartItems.length === 0) {
+      alert('Your cart is empty')
+      return
+    }
+    navigate("/checkout")
   }
 
   return (
@@ -90,21 +96,22 @@ const CartPage = () => {
                           }
                           alt={item.product?.title || item.title}
                           className="w-24 h-24 rounded-lg object-cover"
+                          onError={(e) => {
+                            e.target.src = 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=100&h=100&fit=crop'
+                          }}
                         />
                       </Link>
 
                       <div className="flex-1">
                         <div className="flex items-start justify-between mb-2">
                           <div>
-                            <Link
+                            <Link 
                               to={`/product/${item.product_id || item.productId}`}
                               className="text-lg font-bold text-gray-900 hover:text-primary"
                             >
                               {item.product?.title || item.title}
                             </Link>
-                            <p className="text-sm text-gray-600">
-                              by {item.product?.artisan_name || item.artisan || 'Unknown Artisan'}
-                            </p>
+                            <p className="text-sm text-gray-600">by {item.product?.artisan_name || item.artisan || 'Unknown Artisan'}</p>
                           </div>
 
                           <button
@@ -144,12 +151,12 @@ const CartPage = () => {
                           </div>
 
                           <p className="text-xl font-bold text-gray-900">
-                            KSH{' '}
-                            {(
-                              (typeof item.price === 'string'
-                                ? parseFloat(item.price)
-                                : item.price) * item.quantity
-                            ).toFixed(2)}
+                            KSH {(() => {
+                              const price = item.product?.price || item.price || 0
+                              const numPrice = typeof price === 'string' ? parseFloat(price) : price
+                              const validPrice = isNaN(numPrice) ? 0 : numPrice
+                              return (validPrice * item.quantity).toFixed(2)
+                            })()}
                           </p>
                         </div>
                       </div>
@@ -179,9 +186,7 @@ const CartPage = () => {
                     <div className="border-t border-gray-200 pt-3 mt-3">
                       <div className="flex items-center justify-between">
                         <span className="text-lg font-bold text-gray-900">Total</span>
-                        <span className="text-2xl font-bold text-gray-900">
-                          KSH {total.toFixed(2)}
-                        </span>
+                        <span className="text-2xl font-bold text-gray-900">KSH {total.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
@@ -229,3 +234,4 @@ const CartPage = () => {
 
 export default CartPage
 
+export default CartPage;
