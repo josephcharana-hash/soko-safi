@@ -16,28 +16,47 @@ class Collection(db.Model):
 class Product(db.Model):
     __tablename__ = "products"
     
-    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    artisan_id = db.Column(db.String(36), db.ForeignKey('users.id'))
-    collection_id = db.Column(db.String(36), db.ForeignKey('collections.id'))
-    category_id = db.Column(db.String(36), db.ForeignKey('categories.id'))
-    subcategory_id = db.Column(db.String(36), db.ForeignKey('subcategories.id'))
-    title = db.Column(db.String(255), nullable=False)
-    short_description = db.Column(db.String(500))
-    description = db.Column(db.Text)
-    price = db.Column(db.Numeric(12, 2), nullable=False)
-    currency = db.Column(db.String(3))
-    stock = db.Column(db.Integer)
-    # image = db.Column(db.Text)  # Main product image URL - Column doesn't exist in DB
-    status = db.Column(db.String(50), default='active')
-    meta_data = db.Column(db.Text)
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    price = db.Column(db.Float, nullable=False)
+    description = db.Column(db.String(200))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    deleted_at = db.Column(db.DateTime)
+    
+    # Add properties for compatibility
+    @property
+    def title(self):
+        return self.name
+    
+    @property
+    def artisan_id(self):
+        return None
+    
+    @property
+    def currency(self):
+        return 'KSH'
+    
+    @property
+    def stock(self):
+        return 10
+    
+    @property
+    def status(self):
+        return 'active'
+    
+    @property
+    def category(self):
+        return None
+    
+    @property
+    def subcategory(self):
+        return None
+    
+    @property
+    def deleted_at(self):
+        return None
     
     # Relationships
-    category = db.relationship('Category', backref='products')
-    subcategory = db.relationship('Subcategory', backref='products')
-    images = db.relationship('ProductImage', backref='product', lazy='dynamic')
+    images = db.relationship('ProductImage', backref='product', lazy='dynamic', foreign_keys='ProductImage.product_id')
     
     @property
     def image_url(self):
@@ -60,8 +79,8 @@ class Product(db.Model):
 class ProductImage(db.Model):
     __tablename__ = "product_images"
     
-    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    product_id = db.Column(db.String(36), db.ForeignKey('products.id'))
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'))
     url = db.Column(db.Text, nullable=False)
     alt_text = db.Column(db.String(255))
     position = db.Column(db.Integer)

@@ -71,7 +71,7 @@ def get_current_user() -> dict:
 def require_auth(f):
     """
     Decorator to require authentication for routes
-    
+
     Usage:
         @require_auth
         def protected_route():
@@ -80,20 +80,20 @@ def require_auth(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not session.get('authenticated'):
-            return jsonify({
+            return {
                 'error': 'Authentication required',
                 'message': 'Please log in to access this resource'
-            }), 401
+            }, 401
         return f(*args, **kwargs)
     return decorated_function
 
 def require_role(*allowed_roles):
     """
     Decorator to require specific roles for routes
-    
+
     Args:
         *allowed_roles: List of allowed roles (buyer, artisan, admin)
-        
+
     Usage:
         @require_role('admin', 'artisan')
         def admin_or_artisan_route():
@@ -103,18 +103,18 @@ def require_role(*allowed_roles):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             if not session.get('authenticated'):
-                return jsonify({
+                return {
                     'error': 'Authentication required',
                     'message': 'Please log in to access this resource'
-                }), 401
-            
+                }, 401
+
             user_role = session.get('user_role')
             if user_role not in allowed_roles:
-                return jsonify({
+                return {
                     'error': 'Insufficient permissions',
                     'message': f'This resource requires one of: {", ".join(allowed_roles)}'
-                }), 403
-            
+                }, 403
+
             return f(*args, **kwargs)
         return decorated_function
     return decorator
@@ -122,11 +122,11 @@ def require_role(*allowed_roles):
 def require_ownership_or_role(resource_user_id_param='user_id', *allowed_roles):
     """
     Decorator to require either ownership of resource or specific roles
-    
+
     Args:
         resource_user_id_param (str): Parameter name containing the resource owner's user_id
         *allowed_roles: List of allowed roles that can access any resource
-        
+
     Usage:
         @require_ownership_or_role('user_id', 'admin')
         def user_profile(user_id):
@@ -136,27 +136,27 @@ def require_ownership_or_role(resource_user_id_param='user_id', *allowed_roles):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             if not session.get('authenticated'):
-                return jsonify({
+                return {
                     'error': 'Authentication required',
                     'message': 'Please log in to access this resource'
-                }), 401
-            
+                }, 401
+
             current_user_id = session.get('user_id')
             user_role = session.get('user_role')
-            
+
             # Check if user has required role
             if user_role in allowed_roles:
                 return f(*args, **kwargs)
-            
+
             # Check if user owns the resource
             resource_user_id = kwargs.get(resource_user_id_param)
             if current_user_id == resource_user_id:
                 return f(*args, **kwargs)
-            
-            return jsonify({
+
+            return {
                 'error': 'Access denied',
                 'message': 'You can only access your own resources'
-            }), 403
-            
+            }, 403
+
         return decorated_function
     return decorator

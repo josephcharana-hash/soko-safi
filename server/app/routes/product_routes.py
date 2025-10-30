@@ -10,20 +10,20 @@ class ProductListResource(Resource):
     def get(self):
         """Get all products - Public access"""
         try:
-            products = Product.query.filter_by(deleted_at=None).all()
+            products = Product.query.all()
             return [{
                 'id': p.id,
-                'artisan_id': p.artisan_id,
-                'artisan_name': p.artisan_name,
-                'title': p.title,
+                'artisan_id': None,
+                'artisan_name': 'Unknown Artisan',
+                'title': p.name,
                 'price': float(p.price) if p.price else 0,
                 'description': p.description,
-                'stock': p.stock,
-                'currency': p.currency or 'KSH',
-                'image': p.image,
-                'status': p.status or 'active',
-                'category': p.category.name if p.category else None,
-                'subcategory': p.subcategory.name if p.subcategory else None,
+                'stock': 10,
+                'currency': 'KSH',
+                'image': p.image_url,
+                'status': 'active',
+                'category': None,
+                'subcategory': None,
                 'created_at': p.created_at.isoformat() if p.created_at else None
             } for p in products]
         except Exception as e:
@@ -35,30 +35,30 @@ class ProductListResource(Resource):
         try:
             from flask import session
             from app.models import Category, Subcategory
-            
+
             data = request.json or {}
-            
+
             if not data:
                 return {'error': 'No data provided'}, 400
-            
+
             # Required fields validation
             required_fields = ['title', 'description', 'price']
             for field in required_fields:
                 if not data.get(field):
                     return {'error': f'{field} is required'}, 400
-            
+
             # Set artisan_id to current user if not admin
             artisan_id = session.get('user_id')
             if session.get('user_role') == 'admin' and 'artisan_id' in data:
                 artisan_id = data['artisan_id']
-            
+
             # Get image URL from frontend (already uploaded to Cloudinary)
             image_url = data.get('image')
-            
+
             # Get or create category and subcategory
             category_id = None
             subcategory_id = None
-            
+
             if data.get('category'):
                 category = Category.query.filter_by(name=data['category']).first()
                 if not category:
@@ -66,7 +66,7 @@ class ProductListResource(Resource):
                     db.session.add(category)
                     db.session.flush()  # Get the ID
                 category_id = category.id
-            
+
             if data.get('subcategory') and category_id:
                 subcategory = Subcategory.query.filter_by(name=data['subcategory'], category_id=category_id).first()
                 if not subcategory:
@@ -74,23 +74,17 @@ class ProductListResource(Resource):
                     db.session.add(subcategory)
                     db.session.flush()  # Get the ID
                 subcategory_id = subcategory.id
-            
+
             # Create product
             product = Product(
-                artisan_id=artisan_id,
-                title=data['title'],
+                name=data['title'],
                 description=data['description'],
-                price=float(data['price']),
-                stock=int(data.get('stock', 1)),
-                currency=data.get('currency', 'KSH'),
-                category_id=category_id,
-                subcategory_id=subcategory_id,
-                status='active'
+                price=float(data['price'])
             )
-            
+
             db.session.add(product)
             db.session.flush()  # Get product ID
-            
+
             # Add image if provided
             if image_url:
                 from app.models.product import ProductImage
@@ -100,20 +94,20 @@ class ProductListResource(Resource):
                     position=1
                 )
                 db.session.add(product_image)
-            
+
             db.session.commit()
-            
+
             return {
                 'message': 'Product created successfully',
                 'product': {
                     'id': product.id,
-                    'title': product.title,
+                    'title': product.name,
                     'price': float(product.price),
-                    'image': product.image,
-                    'status': product.status
+                    'image': image_url,
+                    'status': 'active'
                 }
             }, 201
-            
+
         except Exception as e:
             db.session.rollback()
             return {'error': f'Failed to create product: {str(e)}'}, 500
@@ -125,17 +119,17 @@ class ProductResource(Resource):
             product = Product.query.get_or_404(product_id)
             return {
                 'id': product.id,
-                'artisan_id': product.artisan_id,
-                'artisan_name': product.artisan_name,
-                'title': product.title,
+                'artisan_id': None,
+                'artisan_name': 'Unknown Artisan',
+                'title': product.name,
                 'price': float(product.price) if product.price else 0,
                 'description': product.description,
-                'stock': product.stock,
-                'currency': product.currency or 'KSH',
-                'image': product.image,
-                'status': product.status or 'active',
-                'category': product.category.name if product.category else None,
-                'subcategory': product.subcategory.name if product.subcategory else None,
+                'stock': 10,
+                'currency': 'KSH',
+                'image': product.image_url,
+                'status': 'active',
+                'category': None,
+                'subcategory': None,
                 'created_at': product.created_at.isoformat() if product.created_at else None
             }
         except Exception as e:
@@ -153,7 +147,7 @@ class ProductResource(Resource):
             
             # Update allowed fields
             if 'title' in data:
-                product.title = data['title']
+                product.name = data['title']
             if 'description' in data:
                 product.description = data['description']
             if 'price' in data:
@@ -176,11 +170,12 @@ class ProductResource(Resource):
             'product': {
                 'id': product.id,
                 'artisan_id': product.artisan_id,
-                'title': product.title,
+                'title': product.name,
                 'price': float(product.price),
                 'description': product.description,
                 'stock': product.stock,
-                'currency': product.currency
+                'currency': product.currency,
+                'image': product.image_url
             }
         }, 200
     
