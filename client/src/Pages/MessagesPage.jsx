@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { Diamond, Send, User, ArrowLeft, Paperclip, Image as ImageIcon, Loader } from 'lucide-react'
+import { Diamond, Send, User, ArrowLeft, Paperclip, Image as ImageIcon, Loader, Check, CheckCheck, Download } from 'lucide-react'
 import { api } from '../services/api'
 
 const MessagesPage = () => {
@@ -13,6 +13,11 @@ const MessagesPage = () => {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState(null)
+  const [selectedFile, setSelectedFile] = useState(null)
+  const [previewUrl, setPreviewUrl] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const fileInputRef = useRef(null)
+  const imageInputRef = useRef(null)
 
   useEffect(() => {
     loadConversations()
@@ -23,6 +28,19 @@ const MessagesPage = () => {
       loadMessages(selectedConversation)
     }
   }, [selectedConversation])
+
+  // Mark messages as delivered when conversation is opened
+  useEffect(() => {
+    if (messages.length > 0) {
+      const undeliveredMessages = messages
+        .filter(msg => msg.sender !== 'buyer' && msg.status === 'sent')
+        .map(msg => msg.id)
+      
+      if (undeliveredMessages.length > 0) {
+        api.notifications.markMessagesAsDelivered(undeliveredMessages)
+      }
+    }
+  }, [messages])
 
   const loadConversations = async () => {
     try {
@@ -132,24 +150,62 @@ const MessagesPage = () => {
   ]
 
   const currentConversation = conversations.find(c => c.id === selectedConversation)
+  
+  // Filter conversations based on search
+  const filteredConversations = conversations.filter(conv => 
+    conv.artisan.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    conv.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+  
+  // Filter messages based on search
+  const filteredMessages = searchQuery ? 
+    messages.filter(msg => 
+      msg.text.toLowerCase().includes(searchQuery.toLowerCase())
+    ) : messages
+
+  const handleFileSelect = (file, type) => {
+    setSelectedFile(file)
+    if (type === 'image' && file) {
+      const url = URL.createObjectURL(file)
+      setPreviewUrl(url)
+    }
+  }
+
+  const clearAttachment = () => {
+    setSelectedFile(null)
+    setPreviewUrl(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+    if (imageInputRef.current) imageInputRef.current.value = ''
+  }
 
   const handleSendMessage = async (e) => {
     e.preventDefault()
-    if (!messageText.trim() || !currentConversation) return
+    if ((!messageText.trim() && !selectedFile) || !currentConversation) return
     
     try {
       setSending(true)
       const receiverId = currentConversation.artisan?.id || currentConversation.user_id
-      await api.messages.send(receiverId, messageText.trim())
+      
+      let result
+      if (selectedFile) {
+        result = await api.messages.sendWithAttachment(receiverId, messageText.trim(), selectedFile)
+      } else {
+        result = await api.messages.send(receiverId, messageText.trim())
+      }
       
       const newMessage = {
-        id: Date.now(),
+        id: result.message_data?.id || Date.now(),
         sender: 'buyer',
-        text: messageText.trim(),
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        text: messageText.trim() || `Sent ${selectedFile?.type.startsWith('image/') ? 'image' : 'file'}`,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        message_type: selectedFile ? (selectedFile.type.startsWith('image/') ? 'image' : 'file') : 'text',
+        attachment_url: result.message_data?.attachment_url,
+        attachment_name: result.message_data?.attachment_name,
+        status: 'sent'
       }
       setMessages(prev => [...prev, newMessage])
       setMessageText('')
+      clearAttachment()
       
       setTimeout(() => loadMessages(selectedConversation), 1000)
     } catch (error) {
@@ -181,8 +237,17 @@ const MessagesPage = () => {
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden h-[600px] md:h-[calc(100vh-200px)]">
           <div className="flex h-full flex-col md:flex-row">
             <div className="w-full md:w-80 border-b md:border-b-0 md:border-r border-gray-200 flex flex-col max-h-48 md:max-h-none">
-              <div className="p-4 border-b border-gray-200">
+              <div className="p-4 border-b border-gray-200 space-y-3">
                 <h2 className="text-xl font-bold text-gray-900">Messages</h2>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search conversations..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-4 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                  />
+                </div>
               </div>
               
               <div className="flex-1 overflow-y-auto hidden md:block">
@@ -199,7 +264,7 @@ const MessagesPage = () => {
                     </Link>
                   </div>
                 ) : (
-                  conversations.map((conversation) => (
+                  filteredConversations.map((conversation) => (
                     <button
                       key={conversation.id}
                       onClick={() => setSelectedConversation(conversation.id)}
@@ -265,7 +330,14 @@ const MessagesPage = () => {
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                  {messages.map((message) => (
+                  {searchQuery && (
+                    <div className="text-center py-2">
+                      <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                        {filteredMessages.length} message(s) found
+                      </span>
+                    </div>
+                  )}
+                  {filteredMessages.map((message) => (
                     <div
                       key={message.id}
                       className={`flex ${message.sender === 'buyer' ? 'justify-end' : 'justify-start'}`}
@@ -278,21 +350,101 @@ const MessagesPage = () => {
                               : 'bg-gray-100 text-gray-900'
                           }`}
                         >
-                          <p>{message.text}</p>
+                          {message.message_type === 'image' && message.attachment_url ? (
+                            <div className="space-y-2">
+                              <img 
+                                src={message.attachment_url} 
+                                alt={message.attachment_name || 'Image'}
+                                className="max-w-full h-auto rounded-lg cursor-pointer hover:opacity-90"
+                                onClick={() => window.open(message.attachment_url, '_blank')}
+                              />
+                              {message.text && message.text !== 'Sent image' && (
+                                <p>{message.text}</p>
+                              )}
+                            </div>
+                          ) : message.message_type === 'file' && message.attachment_url ? (
+                            <div className="space-y-2">
+                              <div className="flex items-center space-x-2 p-2 bg-black/10 rounded-lg">
+                                <Paperclip className="w-4 h-4" />
+                                <span className="text-sm truncate">{message.attachment_name}</span>
+                                <a 
+                                  href={message.attachment_url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="ml-auto"
+                                >
+                                  <Download className="w-4 h-4 hover:scale-110 transition-transform" />
+                                </a>
+                              </div>
+                              {message.text && message.text !== 'Sent file' && (
+                                <p>{message.text}</p>
+                              )}
+                            </div>
+                          ) : (
+                            <p>{message.text}</p>
+                          )}
                         </div>
-                        <p className={`text-xs text-gray-500 mt-1 ${message.sender === 'buyer' ? 'text-right' : 'text-left'}`}>
-                          {message.time}
-                        </p>
+                        <div className={`flex items-center space-x-1 mt-1 ${message.sender === 'buyer' ? 'justify-end' : 'justify-start'}`}>
+                          <p className="text-xs text-gray-500">{message.time}</p>
+                          {message.sender === 'buyer' && (
+                            <div className="text-xs text-gray-500">
+                              {message.status === 'read' || message.is_read ? (
+                                <CheckCheck className="w-3 h-3 text-blue-500" />
+                              ) : message.status === 'delivered' ? (
+                                <CheckCheck className="w-3 h-3" />
+                              ) : (
+                                <Check className="w-3 h-3" />
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
 
                 <div className="p-4 border-t border-gray-200">
+                  {/* File Preview */}
+                  {(selectedFile || previewUrl) && (
+                    <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700">Attachment:</span>
+                        <button
+                          onClick={clearAttachment}
+                          className="text-red-500 hover:text-red-700 text-sm"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      {previewUrl ? (
+                        <img src={previewUrl} alt="Preview" className="max-w-32 h-auto rounded" />
+                      ) : (
+                        <div className="flex items-center space-x-2">
+                          <Paperclip className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm text-gray-600">{selectedFile?.name}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
                   <form onSubmit={handleSendMessage} className="flex items-end space-x-3">
                     <div className="flex space-x-2">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        className="hidden"
+                        onChange={(e) => handleFileSelect(e.target.files[0], 'file')}
+                      />
+                      <input
+                        ref={imageInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleFileSelect(e.target.files[0], 'image')}
+                      />
                       <button
                         type="button"
+                        onClick={() => fileInputRef.current?.click()}
                         className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
                         title="Attach file"
                       >
@@ -300,6 +452,7 @@ const MessagesPage = () => {
                       </button>
                       <button
                         type="button"
+                        onClick={() => imageInputRef.current?.click()}
                         className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
                         title="Attach image"
                       >
@@ -310,7 +463,7 @@ const MessagesPage = () => {
                       <textarea
                         value={messageText}
                         onChange={(e) => setMessageText(e.target.value)}
-                        placeholder="Type your message..."
+                        placeholder={selectedFile ? "Add a caption (optional)..." : "Type your message..."}
                         rows="3"
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
                         onKeyDown={(e) => {
@@ -323,7 +476,7 @@ const MessagesPage = () => {
                     </div>
                     <button
                       type="submit"
-                      disabled={!messageText.trim() || sending}
+                      disabled={(!messageText.trim() && !selectedFile) || sending}
                       className="btn-primary p-3 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {sending ? (

@@ -33,17 +33,66 @@ class MessageListResource(Resource):
     def post(self):
         """Create new message - Authenticated users only"""
         from flask import session
-        data = request.json
+        from app.models.message import MessageType, MessageStatus
+        
+        # Handle both JSON and form data (for file uploads)
+        if request.content_type and 'multipart/form-data' in request.content_type:
+            data = request.form.to_dict()
+            files = request.files
+        else:
+            data = request.json or {}
+            files = {}
         
         # Validate required fields
-        if not data or 'receiver_id' not in data or 'message' not in data:
-            return {'error': 'receiver_id and message are required'}, 400
+        if not data or 'receiver_id' not in data:
+            return {'error': 'receiver_id is required'}, 400
         
-        # Create message with explicit field assignment to prevent mass assignment
+        # Check if it's a text message or attachment
+        message_text = data.get('message', '').strip()
+        attachment_file = files.get('attachment')
+        
+        if not message_text and not attachment_file:
+            return {'error': 'Either message text or attachment is required'}, 400
+        
+        attachment_url = None
+        attachment_name = None
+        message_type = MessageType.TEXT
+        
+        # Handle file upload to Cloudinary
+        if attachment_file:
+            try:
+                import cloudinary.uploader
+                
+                # Determine message type based on file
+                if attachment_file.content_type.startswith('image/'):
+                    message_type = MessageType.IMAGE
+                    folder = 'soko-safi/messages/images'
+                else:
+                    message_type = MessageType.FILE
+                    folder = 'soko-safi/messages/files'
+                
+                # Upload to Cloudinary
+                upload_result = cloudinary.uploader.upload(
+                    attachment_file,
+                    folder=folder,
+                    resource_type='auto'
+                )
+                
+                attachment_url = upload_result.get('secure_url')
+                attachment_name = attachment_file.filename
+                
+            except Exception as e:
+                return {'error': f'File upload failed: {str(e)}'}, 500
+        
+        # Create message
         message = Message(
-            sender_id=session.get('user_id'),  # Always use current user as sender
+            sender_id=session.get('user_id'),
             receiver_id=data.get('receiver_id'),
-            message=data.get('message')
+            message=message_text or f'Sent {message_type.value}',
+            message_type=message_type,
+            attachment_url=attachment_url,
+            attachment_name=attachment_name,
+            status=MessageStatus.SENT
         )
         
         try:
@@ -59,7 +108,11 @@ class MessageListResource(Resource):
                 'id': message.id,
                 'sender_id': message.sender_id,
                 'receiver_id': message.receiver_id,
-                'message': message.message
+                'message': message.message,
+                'message_type': message.message_type.value,
+                'attachment_url': message.attachment_url,
+                'attachment_name': message.attachment_name,
+                'status': message.status.value
             }
         }, 201
 
@@ -152,54 +205,153 @@ class MessageConversationsResource(Resource):
         """Get conversations for current user"""
         from flask import session
         from app.models import User
+        from sqlalchemy import func, desc
 
         current_user_id = session.get('user_id')
-        user_role = session.get('user_role')
 
-        if user_role == 'admin':
-            # Admin gets all conversations (simplified for now)
-            conversations = db.session.query(Message).filter(
-                Message.deleted_at.is_(None)
-            ).group_by(Message.sender_id, Message.receiver_id).limit(20).all()
-        else:
-            # Regular users get their conversations
-            conversations = db.session.query(Message).filter(
+        # Get latest message for each conversation partner
+        subquery = db.session.query(
+            func.greatest(Message.sender_id, Message.receiver_id).label('user1'),
+            func.least(Message.sender_id, Message.receiver_id).label('user2'),
+            func.max(Message.timestamp).label('latest_timestamp')
+        ).filter(
+            db.or_(
+                Message.sender_id == current_user_id,
+                Message.receiver_id == current_user_id
+            ),
+            Message.deleted_at.is_(None)
+        ).group_by('user1', 'user2').subquery()
+
+        # Get the actual latest messages
+        latest_messages = db.session.query(Message).join(
+            subquery,
+            db.and_(
+                Message.timestamp == subquery.c.latest_timestamp,
                 db.or_(
-                    Message.sender_id == current_user_id,
-                    Message.receiver_id == current_user_id
-                ),
-                Message.deleted_at.is_(None)
-            ).order_by(Message.timestamp.desc()).limit(20).all()
+                    db.and_(
+                        Message.sender_id == subquery.c.user1,
+                        Message.receiver_id == subquery.c.user2
+                    ),
+                    db.and_(
+                        Message.sender_id == subquery.c.user2,
+                        Message.receiver_id == subquery.c.user1
+                    )
+                )
+            )
+        ).order_by(desc(Message.timestamp)).all()
 
-        # Group by conversation partner
-        conversation_partners = {}
-        for msg in conversations:
+        conversations = []
+        for msg in latest_messages:
             partner_id = msg.receiver_id if msg.sender_id == current_user_id else msg.sender_id
-            if partner_id not in conversation_partners:
-                partner = User.query.get(partner_id)
-                conversation_partners[partner_id] = {
-                    'partner_id': partner_id,
-                    'partner_name': partner.full_name if partner else 'Unknown User',
-                    'partner_email': partner.email if partner else '',
-                    'last_message': msg.message,
-                    'timestamp': msg.timestamp.isoformat() if msg.timestamp else None,
-                    'is_read': msg.is_read,
-                    'unread_count': 0
-                }
+            partner = User.query.get(partner_id)
+            
+            if partner:
+                # Count unread messages from this partner
+                unread_count = Message.query.filter_by(
+                    sender_id=partner_id,
+                    receiver_id=current_user_id,
+                    is_read=False,
+                    deleted_at=None
+                ).count()
 
-        # Count unread messages for each conversation
-        for partner_id, conv in conversation_partners.items():
-            unread_count = Message.query.filter_by(
-                sender_id=partner_id,
-                receiver_id=current_user_id,
-                is_read=False,
-                deleted_at=None
-            ).count()
-            conv['unread_count'] = unread_count
+                # Get user avatar from profile or generate one
+                avatar_url = partner.profile_picture_url if hasattr(partner, 'profile_picture_url') and partner.profile_picture_url else f'https://ui-avatars.com/api/?name={partner.full_name or "User"}&background=6366f1&color=fff'
+                
+                conversations.append({
+                    'id': partner_id,
+                    'artisan': {
+                        'id': partner_id,
+                        'name': partner.full_name or 'Unknown User',
+                        'avatar': avatar_url,
+                        'online': False  # TODO: Implement online status
+                    },
+                    'lastMessage': msg.message,
+                    'lastMessageTime': msg.timestamp.strftime('%H:%M') if msg.timestamp else '',
+                    'unread': unread_count
+                })
 
-        return list(conversation_partners.values())
+        return conversations
+
+class ConversationMessagesResource(Resource):
+    @require_auth
+    def get(self, user_id):
+        """Get messages in conversation with specific user"""
+        from flask import session
+        from app.models import User
+
+        current_user_id = session.get('user_id')
+        
+        # Get all messages between current user and specified user
+        messages = Message.query.filter(
+            db.or_(
+                db.and_(Message.sender_id == current_user_id, Message.receiver_id == user_id),
+                db.and_(Message.sender_id == user_id, Message.receiver_id == current_user_id)
+            ),
+            Message.deleted_at.is_(None)
+        ).order_by(Message.timestamp.asc()).limit(100).all()  # Limit to last 100 messages for performance
+
+        # Mark messages from the other user as read and delivered
+        from app.models.message import MessageStatus
+        Message.query.filter_by(
+            sender_id=user_id,
+            receiver_id=current_user_id,
+            is_read=False,
+            deleted_at=None
+        ).update({
+            'is_read': True,
+            'status': MessageStatus.read
+        })
+        db.session.commit()
+
+        formatted_messages = []
+        for msg in messages:
+            formatted_messages.append({
+                'id': msg.id,
+                'sender': 'buyer' if msg.sender_id == current_user_id else 'artisan',
+                'text': msg.message,
+                'time': msg.timestamp.strftime('%H:%M') if msg.timestamp else '',
+                'message_type': msg.message_type.value if msg.message_type else 'text',
+                'attachment_url': msg.attachment_url,
+                'attachment_name': msg.attachment_name,
+                'status': msg.status.value if msg.status else 'sent',
+                'is_read': msg.is_read
+            })
+
+        return formatted_messages
+
+class MessageStatusResource(Resource):
+    @require_auth
+    def put(self, message_id):
+        """Update message status (delivered/read)"""
+        from flask import session
+        from app.models.message import MessageStatus
+        
+        message = Message.query.get_or_404(message_id)
+        current_user_id = session.get('user_id')
+        
+        # Only receiver can update status
+        if message.receiver_id != current_user_id:
+            return {'error': 'Access denied'}, 403
+        
+        data = request.json or {}
+        
+        if 'status' in data:
+            try:
+                message.status = MessageStatus(data['status'])
+                if data['status'] == 'read':
+                    message.is_read = True
+                db.session.commit()
+            except ValueError:
+                return {'error': 'Invalid status'}, 400
+        
+        return {
+            'message': 'Status updated successfully',
+            'status': message.status.value
+        }, 200
 
 # Register routes
 message_api.add_resource(MessageListResource, '/')
 message_api.add_resource(MessageResource, '/<message_id>')
+message_api.add_resource(MessageStatusResource, '/<message_id>/status')
 message_api.add_resource(MessageConversationsResource, '/conversations')
+message_api.add_resource(ConversationMessagesResource, '/<user_id>')

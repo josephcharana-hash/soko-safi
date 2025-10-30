@@ -279,7 +279,22 @@ export const api = {
     getMessages: (userId) => apiRequest(`/messages/${userId}`),
     send: (receiverId, content) => apiRequest('/messages/', {
       method: 'POST',
-      body: JSON.stringify({ receiver_id: receiverId, content }),
+      body: JSON.stringify({ receiver_id: receiverId, message: content }),
+    }),
+    sendWithAttachment: (receiverId, message, file) => {
+      const formData = new FormData()
+      formData.append('receiver_id', receiverId)
+      if (message) formData.append('message', message)
+      if (file) formData.append('attachment', file)
+      
+      return apiRequest('/messages/', {
+        method: 'POST',
+        body: formData,
+      })
+    },
+    updateStatus: (messageId, status) => apiRequest(`/messages/${messageId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
     }),
   },
 
@@ -315,6 +330,20 @@ export const api = {
   notifications: {
     getAll: () => apiRequest('/notifications/'),
     markAsRead: (id) => apiRequest(`/notifications/${id}/read`, { method: 'PUT' }),
+    markMessagesAsDelivered: async (messageIds) => {
+      try {
+        await Promise.all(
+          messageIds.map(id => 
+            apiRequest(`/messages/${id}/status`, {
+              method: 'PUT',
+              body: JSON.stringify({ status: 'delivered' })
+            })
+          )
+        )
+      } catch (error) {
+        console.warn('Failed to mark messages as delivered:', error.message)
+      }
+    },
     markAllAsRead: () => apiRequest('/notifications/read-all', { method: 'PUT' }),
   },
 
