@@ -2,6 +2,11 @@ services:
   - type: web
     name: soko-safi
     env: python
-    pythonVersion: 3.12.6
-    buildCommand: pip install -r requirements.txt
+    buildCommand: |
+      sudo apt-get update
+      sudo apt-get install python3.12 python3.12-venv python3.12-dev -y
+      python3.12 -m venv .venv
+      source .venv/bin/activate
+      pip install --upgrade pip
+      pip install -r requirements.txt
     startCommand: gunicorn app:app
