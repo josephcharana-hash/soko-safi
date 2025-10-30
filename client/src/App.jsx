@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Suspense, lazy, useEffect } from "react";
 import ErrorBoundary from "./Components/ErrorBoundary";
 import LoadingSpinner from "./Components/LoadingSpinner";
+import ProtectedRoute from "./Components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./hooks/useCart.jsx";
 import { quickHealthCheck } from "./utils/apiTest";
@@ -142,7 +143,9 @@ function App() {
                     path="/cart"
                     element={
                       <ErrorBoundary>
-                        <CartPage />
+                        <ProtectedRoute>
+                          <CartPage />
+                        </ProtectedRoute>
                       </ErrorBoundary>
                     }
                   />
@@ -150,7 +153,9 @@ function App() {
                     path="/checkout"
                     element={
                       <ErrorBoundary>
-                        <CheckoutPage />
+                        <ProtectedRoute>
+                          <CheckoutPage />
+                        </ProtectedRoute>
                       </ErrorBoundary>
                     }
                   />
@@ -174,7 +179,9 @@ function App() {
                     path="/messages"
                     element={
                       <ErrorBoundary>
-                        <MessagesPage />
+                        <ProtectedRoute>
+                          <MessagesPage />
+                        </ProtectedRoute>
                       </ErrorBoundary>
                     }
                   />
@@ -182,7 +189,9 @@ function App() {
                     path="/messages/:id"
                     element={
                       <ErrorBoundary>
-                        <MessagesPage />
+                        <ProtectedRoute>
+                          <MessagesPage />
+                        </ProtectedRoute>
                       </ErrorBoundary>
                     }
                   />
@@ -198,7 +207,9 @@ function App() {
                     path="/buyer-dashboard"
                     element={
                       <ErrorBoundary>
-                        <BuyerDashboard />
+                        <ProtectedRoute requiredRole="buyer">
+                          <BuyerDashboard />
+                        </ProtectedRoute>
                       </ErrorBoundary>
                     }
                   />
@@ -206,7 +217,9 @@ function App() {
                     path="/artisan-dashboard"
                     element={
                       <ErrorBoundary>
-                        <ArtisanDashboard />
+                        <ProtectedRoute requiredRole="artisan">
+                          <ArtisanDashboard />
+                        </ProtectedRoute>
                       </ErrorBoundary>
                     }
                   />

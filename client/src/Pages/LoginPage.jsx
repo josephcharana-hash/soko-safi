@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Diamond, Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import LoadingSpinner from '../Components/LoadingSpinner'
 
 const LoginPage = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const { login, loading: authLoading, error: authError, clearError } = useAuth()
   const [formData, setFormData] = useState({
     email: '',
@@ -44,10 +45,14 @@ const LoginPage = () => {
       clearError(); // Clear any previous auth errors
       const result = await login(formData)
       
-      // Redirect based on user role
+      // Get the intended destination from location state or default based on role
+      const from = location.state?.from?.pathname
       const userRole = result.user?.role || 'buyer'
       
-      if (userRole === 'artisan') {
+      if (from && from !== '/login') {
+        // Redirect to the page they were trying to access
+        navigate(from, { replace: true })
+      } else if (userRole === 'artisan') {
         navigate('/artisan-dashboard', { replace: true })
       } else if (userRole === 'admin') {
         navigate('/admin-dashboard', { replace: true })
