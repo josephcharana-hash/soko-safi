@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Diamond, Upload, Bell, User, Plus, Settings, Camera } from 'lucide-react'
 import { api } from '../services/api'
+import { uploadToCloudinary } from '../services/cloudinary'
 import { useAuth } from '../context/AuthContext'
 import ArtisanSidebar from '../Components/Layout/ArtisanSidebar'
 
@@ -231,22 +232,26 @@ const ArtisanDashboard = () => {
     try {
       setLoading(true)
       
-      // Create FormData for file upload
-      const formDataToSend = new FormData()
-      formDataToSend.append('title', formData.title)
-      formDataToSend.append('description', formData.description)
-      formDataToSend.append('price', parseFloat(formData.price))
-      formDataToSend.append('category', formData.category)
-      formDataToSend.append('subcategory', formData.subcategory)
-      formDataToSend.append('stock', 10)
-      formDataToSend.append('currency', 'KSH')
+      let imageUrl = null
       
-      // Add image if uploaded
+      // Upload image to Cloudinary if selected
       if (selectedFile) {
-        formDataToSend.append('image', selectedFile)
+        imageUrl = await uploadToCloudinary(selectedFile)
       }
       
-      await api.products.create(formDataToSend)
+      // Create product data
+      const productData = {
+        title: formData.title,
+        description: formData.description,
+        price: parseFloat(formData.price),
+        category: formData.category,
+        subcategory: formData.subcategory,
+        stock: 10,
+        currency: 'KSH',
+        image: imageUrl
+      }
+      
+      await api.products.create(productData)
       await loadProducts() // Reload products
       
       setShowAddProduct(false)

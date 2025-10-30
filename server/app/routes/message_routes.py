@@ -35,13 +35,7 @@ class MessageListResource(Resource):
         from flask import session
         from app.models.message import MessageType, MessageStatus
         
-        # Handle both JSON and form data (for file uploads)
-        if request.content_type and 'multipart/form-data' in request.content_type:
-            data = request.form.to_dict()
-            files = request.files
-        else:
-            data = request.json or {}
-            files = {}
+        data = request.json or {}
         
         # Validate required fields
         if not data or 'receiver_id' not in data:
@@ -49,40 +43,18 @@ class MessageListResource(Resource):
         
         # Check if it's a text message or attachment
         message_text = data.get('message', '').strip()
-        attachment_file = files.get('attachment')
+        attachment_url = data.get('attachment_url')
+        attachment_name = data.get('attachment_name')
+        message_type_str = data.get('message_type', 'text')
         
-        if not message_text and not attachment_file:
+        if not message_text and not attachment_url:
             return {'error': 'Either message text or attachment is required'}, 400
         
-        attachment_url = None
-        attachment_name = None
-        message_type = MessageType.TEXT
-        
-        # Handle file upload to Cloudinary
-        if attachment_file:
-            try:
-                import cloudinary.uploader
-                
-                # Determine message type based on file
-                if attachment_file.content_type.startswith('image/'):
-                    message_type = MessageType.IMAGE
-                    folder = 'soko-safi/messages/images'
-                else:
-                    message_type = MessageType.FILE
-                    folder = 'soko-safi/messages/files'
-                
-                # Upload to Cloudinary
-                upload_result = cloudinary.uploader.upload(
-                    attachment_file,
-                    folder=folder,
-                    resource_type='auto'
-                )
-                
-                attachment_url = upload_result.get('secure_url')
-                attachment_name = attachment_file.filename
-                
-            except Exception as e:
-                return {'error': f'File upload failed: {str(e)}'}, 500
+        # Determine message type
+        try:
+            message_type = MessageType(message_type_str)
+        except ValueError:
+            message_type = MessageType.TEXT
         
         # Create message
         message = Message(

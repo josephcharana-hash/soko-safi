@@ -148,7 +148,7 @@ export const api = {
     },
     create: (data) => apiRequest('/products/', {
       method: 'POST',
-      body: data instanceof FormData ? data : JSON.stringify(data),
+      body: JSON.stringify(data),
     }),
     update: (id, data) => apiRequest(`/products/${id}`, {
       method: 'PUT',
@@ -402,9 +402,9 @@ export const api = {
       return response.user || response
     },
     uploadImage: async (file) => {
-      // Use Cloudinary directly for profile pictures
       const { uploadToCloudinary } = await import('./cloudinary');
-      return uploadToCloudinary(file);
+      const url = await uploadToCloudinary(file);
+      return { url };
     },
   },
 

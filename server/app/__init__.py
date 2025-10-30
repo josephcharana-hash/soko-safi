@@ -2,7 +2,6 @@ import os
 from flask import Flask
 from app.extensions import db, socketio, session
 from dotenv import load_dotenv
-import cloudinary
 
 load_dotenv()
 
@@ -28,12 +27,7 @@ def create_app():
     flask_app.config['UPLOAD_FOLDER'] = os.path.join(flask_app.root_path, 'uploads')
     flask_app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
     
-    # Configure Cloudinary
-    cloudinary.config(
-        cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME', 'dzgwtssxv'),
-        api_key=os.getenv('CLOUDINARY_API_KEY'),
-        api_secret=os.getenv('CLOUDINARY_API_SECRET')
-    )
+    # Cloudinary configuration removed - handled by frontend
     
     # Initialize extensions
     db.init_app(flask_app)

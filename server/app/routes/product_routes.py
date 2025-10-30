@@ -36,13 +36,7 @@ class ProductListResource(Resource):
             from flask import session
             from app.models import Category, Subcategory
             
-            # Handle both JSON and form data (for file uploads)
-            if request.content_type and 'multipart/form-data' in request.content_type:
-                data = request.form.to_dict()
-                files = request.files
-            else:
-                data = request.json or {}
-                files = {}
+            data = request.json or {}
             
             if not data:
                 return {'error': 'No data provided'}, 400
@@ -58,27 +52,8 @@ class ProductListResource(Resource):
             if session.get('user_role') == 'admin' and 'artisan_id' in data:
                 artisan_id = data['artisan_id']
             
-            # Handle image upload to Cloudinary
-            image_url = None
-            image_file = files.get('image')
-            if image_file:
-                try:
-                    import cloudinary.uploader
-                    
-                    # Upload to Cloudinary
-                    upload_result = cloudinary.uploader.upload(
-                        image_file,
-                        folder='soko-safi/products',
-                        transformation=[
-                            {'width': 800, 'height': 600, 'crop': 'fill'},
-                            {'quality': 'auto'}
-                        ]
-                    )
-                    
-                    image_url = upload_result.get('secure_url')
-                    
-                except Exception as e:
-                    return {'error': f'Image upload failed: {str(e)}'}, 500
+            # Get image URL from frontend (already uploaded to Cloudinary)
+            image_url = data.get('image')
             
             # Get or create category and subcategory
             category_id = None

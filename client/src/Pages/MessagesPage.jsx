@@ -4,6 +4,7 @@ import { Send, Paperclip, Image as ImageIcon, Loader, Check, CheckCheck, Downloa
 import DashboardNavbar from '../Components/Layout/DashboardNavbar'
 import BuyerSidebar from '../Components/Layout/BuyerSidebar'
 import { api } from '../services/api'
+import { uploadToCloudinary } from '../services/cloudinary'
 import { useAuth } from '../context/AuthContext'
 
 const MessagesPage = () => {
@@ -190,21 +191,29 @@ const MessagesPage = () => {
       setSending(true)
       const receiverId = currentConversation.artisan?.id || currentConversation.user_id
       
-      let result
+      let attachmentUrl = null
       if (selectedFile) {
-        result = await api.messages.sendWithAttachment(receiverId, messageText.trim(), selectedFile)
-      } else {
-        result = await api.messages.send(receiverId, messageText.trim())
+        attachmentUrl = await uploadToCloudinary(selectedFile)
       }
+      
+      const messageData = {
+        receiver_id: receiverId,
+        message: messageText.trim() || `Sent ${selectedFile?.type.startsWith('image/') ? 'image' : 'file'}`,
+        message_type: selectedFile ? (selectedFile.type.startsWith('image/') ? 'image' : 'file') : 'text',
+        attachment_url: attachmentUrl,
+        attachment_name: selectedFile?.name
+      }
+      
+      const result = await api.messages.send(receiverId, messageData.message)
       
       const newMessage = {
         id: result.message_data?.id || Date.now(),
         sender: 'buyer',
-        text: messageText.trim() || `Sent ${selectedFile?.type.startsWith('image/') ? 'image' : 'file'}`,
+        text: messageData.message,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        message_type: selectedFile ? (selectedFile.type.startsWith('image/') ? 'image' : 'file') : 'text',
-        attachment_url: result.message_data?.attachment_url,
-        attachment_name: result.message_data?.attachment_name,
+        message_type: messageData.message_type,
+        attachment_url: attachmentUrl,
+        attachment_name: selectedFile?.name,
         status: 'sent'
       }
       setMessages(prev => [...prev, newMessage])
