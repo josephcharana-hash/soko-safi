@@ -24,14 +24,14 @@ const BuyerDashboard = lazy(() => import("./Pages/BuyerDashboard"));
 const ArtisanDashboard = lazy(() => import("./Pages/ArtisanDashboard"));
 const ArtisanProfilePage = lazy(() => import("./Pages/ArtisanProfilePage"));
 
-// Loading component
+// Loading spinner for Suspense fallback
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center">
     <LoadingSpinner size="lg" text="Loading..." />
   </div>
 );
 
-// Error fallback component
+// Fallback UI for major errors
 const ErrorFallback = ({ error, retry }) => (
   <div className="min-h-screen flex items-center justify-center p-8">
     <div className="text-center max-w-md">
@@ -65,7 +65,7 @@ const ErrorFallback = ({ error, retry }) => (
 );
 
 function App() {
-  // Run API health check in development
+  // Development health check
   useEffect(() => {
     if (import.meta.env.VITE_APP_ENV === "development") {
       setTimeout(() => {

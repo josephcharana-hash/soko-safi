@@ -13,14 +13,11 @@ const CheckoutPage = () => {
   const [processing, setProcessing] = useState(false)
   const [shippingInfo, setShippingInfo] = useState({
     fullName: "",
-    email: "",
-    phone: "",
     address: "",
     city: "",
-    state: "",
-    zipCode: "",
-    country: "",
+    phone: "",
   });
+
   const [paymentInfo, setPaymentInfo] = useState({
     phoneNumber: '',
     paymentMethod: 'mpesa'
@@ -42,9 +39,9 @@ const CheckoutPage = () => {
   const tax = subtotal * 0.16 // 16% VAT in Kenya
   const total = subtotal + shipping + tax
 
-  const handleShippingSubmit = (e) => {
-    e.preventDefault();
-    setStep(2);
+  const handlePaymentChange = (e) => {
+    const { name, value } = e.target;
+    setPaymentInfo({ ...paymentInfo, [name]: value });
   };
 
   const handlePaymentSubmit = async (e) => {
@@ -114,92 +111,72 @@ const CheckoutPage = () => {
     }
   }
 
-  const handleShippingChange = (e) => {
-    setShippingInfo({
-      ...shippingInfo,
-      [e.target.name]: e.target.value,
-    });
+    // simulate payment processing
+    setTimeout(() => {
+      setProcessing(false);
+      setStep(3);
+    }, 2000);
   };
 
-  const handlePaymentChange = (e) => {
-    setPaymentInfo({
-      ...paymentInfo,
-      [e.target.name]: e.target.value,
-    });
+  const handleConfirmOrder = () => {
+    alert("Order confirmed! Thank you for shopping with us.");
+    navigate("/");
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar />
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-10">
+      <div className="w-full max-w-2xl bg-white shadow-md rounded-2xl p-6">
+        <h2 className="text-2xl font-semibold text-center mb-6">
+          Checkout - Step {step} of 3
+        </h2>
 
-      <main className="flex-1">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          {loading ? (
-            <div className="flex justify-center items-center min-h-[400px]">
-              <Loader className="w-8 h-8 text-primary animate-spin" />
+        {/* Step 1: Shipping Info */}
+        {step === 1 && (
+          <form className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium">Full Name</label>
+              <input
+                type="text"
+                name="fullName"
+                value={shippingInfo.fullName}
+                onChange={handleShippingChange}
+                className="mt-1 w-full border border-gray-300 rounded-lg p-2"
+                placeholder="John Doe"
+              />
             </div>
-          ) : (
-            <>
-          {/* Progress Steps */}
-          <div className="mb-8 md:mb-12">
-            <div className="flex items-center justify-center space-x-2 md:space-x-4">
-              <div
-                className={`flex items-center ${
-                  step >= 1 ? "text-primary" : "text-gray-400"
-                }`}
-              >
-                <div
-                  className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-sm md:text-base ${
-                    step >= 1 ? "bg-primary text-white" : "bg-gray-200"
-                  }`}
-                >
-                  1
-                </div>
-                <span className="ml-1 md:ml-2 font-medium text-xs md:text-base hidden sm:inline">
-                  Shipping
-                </span>
+            <div>
+              <label className="block text-sm font-medium">Address</label>
+              <input
+                type="text"
+                name="address"
+                value={shippingInfo.address}
+                onChange={handleShippingChange}
+                className="mt-1 w-full border border-gray-300 rounded-lg p-2"
+                placeholder="123 Main Street"
+              />
+            </div>
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium">City</label>
+                <input
+                  type="text"
+                  name="city"
+                  value={shippingInfo.city}
+                  onChange={handleShippingChange}
+                  className="mt-1 w-full border border-gray-300 rounded-lg p-2"
+                  placeholder="Nairobi"
+                />
               </div>
-              <div
-                className={`w-8 md:w-16 h-1 ${
-                  step >= 2 ? "bg-primary" : "bg-gray-200"
-                }`}
-              ></div>
-              <div
-                className={`flex items-center ${
-                  step >= 2 ? "text-primary" : "text-gray-400"
-                }`}
-              >
-                <div
-                  className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-sm md:text-base ${
-                    step >= 2 ? "bg-primary text-white" : "bg-gray-200"
-                  }`}
-                >
-                  2
-                </div>
-                <span className="ml-1 md:ml-2 font-medium text-xs md:text-base hidden sm:inline">
-                  Payment
-                </span>
-              </div>
-              <div
-                className={`w-8 md:w-16 h-1 ${
-                  step >= 3 ? "bg-primary" : "bg-gray-200"
-                }`}
-              ></div>
-              <div
-                className={`flex items-center ${
-                  step >= 3 ? "text-primary" : "text-gray-400"
-                }`}
-              >
-                <div
-                  className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-sm md:text-base ${
-                    step >= 3 ? "bg-primary text-white" : "bg-gray-200"
-                  }`}
-                >
-                  3
-                </div>
-                <span className="ml-1 md:ml-2 font-medium text-xs md:text-base hidden sm:inline">
-                  Confirm
-                </span>
+              <div className="flex-1">
+                <label className="block text-sm font-medium">Phone</label>
+                <input
+                  type="text"
+                  name="phone"
+                  value={shippingInfo.phone}
+                  onChange={handleShippingChange}
+                  className="mt-1 w-full border border-gray-300 rounded-lg p-2"
+                  placeholder="07XX XXX XXX"
+                />
               </div>
             </div>
           </div>
@@ -564,14 +541,43 @@ const CheckoutPage = () => {
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-            </>
-          )}
-        </div>
-      </main>
+            )}
 
-      <Footer />
+            <div className="flex justify-between">
+              <button
+                type="button"
+                onClick={handlePrevious}
+                className="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition"
+              >
+                Back
+              </button>
+              <button
+                type="submit"
+                disabled={processing}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition disabled:bg-gray-400"
+              >
+                {processing ? "Processing..." : "Pay Now"}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Step 3: Confirmation */}
+        {step === 3 && (
+          <div className="text-center space-y-4">
+            <h3 className="text-xl font-semibold text-green-700">
+              ✅ Payment Successful!
+            </h3>
+            <p>Your order has been placed successfully.</p>
+            <button
+              onClick={handleConfirmOrder}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+            >
+              Go Back Home
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

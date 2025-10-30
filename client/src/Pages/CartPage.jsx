@@ -12,7 +12,6 @@ const CartPage = () => {
 
   const handleUpdateQuantity = async (id, newQuantity) => {
     if (newQuantity < 1) return
-    
     try {
       setUpdating(prev => ({ ...prev, [id]: true }))
       await updateQuantity(id, newQuantity)
@@ -40,8 +39,9 @@ const CartPage = () => {
     const validPrice = isNaN(numPrice) ? 0 : numPrice
     return sum + (validPrice * item.quantity)
   }, 0)
+
   const shipping = 150.00 // KSH 150 shipping
-  const tax = subtotal * 0.16 // 16% VAT in Kenya
+  const tax = subtotal * 0.16 // 16% VAT
   const total = subtotal + shipping + tax
 
   const handleCheckout = () => {
@@ -76,10 +76,7 @@ const CartPage = () => {
               <p className="text-gray-600 mb-6">
                 Add some beautiful handcrafted items to get started!
               </p>
-              <Link
-                to="/explore"
-                className="btn-primary inline-block px-6 py-3"
-              >
+              <Link to="/explore" className="btn-primary inline-block px-6 py-3">
                 Explore Products
               </Link>
             </div>
@@ -88,14 +85,15 @@ const CartPage = () => {
               {/* Cart Items */}
               <div className="lg:col-span-2 space-y-4">
                 {cartItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="bg-white rounded-xl shadow-sm p-6"
-                  >
+                  <div key={item.id} className="bg-white rounded-xl shadow-sm p-6">
                     <div className="flex items-start space-x-4">
                       <Link to={`/product/${item.product_id || item.productId}`}>
-                        <img 
-                          src={item.product?.image || item.image || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=100&h=100&fit=crop'} 
+                        <img
+                          src={
+                            item.product?.image ||
+                            item.image ||
+                            'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=100&h=100&fit=crop'
+                          }
                           alt={item.product?.title || item.title}
                           className="w-24 h-24 rounded-lg object-cover"
                           onError={(e) => {
@@ -103,6 +101,7 @@ const CartPage = () => {
                           }}
                         />
                       </Link>
+
                       <div className="flex-1">
                         <div className="flex items-start justify-between mb-2">
                           <div>
@@ -114,12 +113,17 @@ const CartPage = () => {
                             </Link>
                             <p className="text-sm text-gray-600">by {item.product?.artisan_name || item.artisan || 'Unknown Artisan'}</p>
                           </div>
+
                           <button
                             onClick={() => handleRemoveItem(item.id)}
                             disabled={updating[item.id]}
                             className="p-2 text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
                           >
-                            {updating[item.id] ? <Loader className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
+                            {updating[item.id] ? (
+                              <Loader className="w-5 h-5 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-5 h-5" />
+                            )}
                           </button>
                         </div>
 
@@ -132,9 +136,11 @@ const CartPage = () => {
                             >
                               <Minus className="w-4 h-4" />
                             </button>
+
                             <span className="text-lg font-medium w-8 text-center">
                               {item.quantity}
                             </span>
+
                             <button
                               onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
                               disabled={updating[item.id]}
@@ -143,6 +149,7 @@ const CartPage = () => {
                               <Plus className="w-4 h-4" />
                             </button>
                           </div>
+
                           <p className="text-xl font-bold text-gray-900">
                             KSH {(() => {
                               const price = item.product?.price || item.price || 0
@@ -161,9 +168,7 @@ const CartPage = () => {
               {/* Order Summary */}
               <div className="lg:col-span-1">
                 <div className="bg-white rounded-xl shadow-sm p-6 sticky top-8">
-                  <h2 className="text-xl font-bold text-gray-900 mb-6">
-                    Order Summary
-                  </h2>
+                  <h2 className="text-xl font-bold text-gray-900 mb-6">Order Summary</h2>
 
                   <div className="space-y-3 mb-6">
                     <div className="flex items-center justify-between text-gray-700">
@@ -175,7 +180,7 @@ const CartPage = () => {
                       <span className="font-medium">KSH {shipping.toFixed(2)}</span>
                     </div>
                     <div className="flex items-center justify-between text-gray-700">
-                      <span>Tax</span>
+                      <span>Tax (16%)</span>
                       <span className="font-medium">KSH {tax.toFixed(2)}</span>
                     </div>
                     <div className="border-t border-gray-200 pt-3 mt-3">
@@ -186,10 +191,7 @@ const CartPage = () => {
                     </div>
                   </div>
 
-                  <button
-                    onClick={handleCheckout}
-                    className="w-full btn-primary py-3 text-lg mb-4"
-                  >
+                  <button onClick={handleCheckout} className="w-full btn-primary py-3 text-lg mb-4">
                     Proceed to Checkout
                   </button>
 
@@ -227,7 +229,9 @@ const CartPage = () => {
 
       <Footer />
     </div>
-  );
-};
+  )
+}
+
+export default CartPage
 
 export default CartPage;
